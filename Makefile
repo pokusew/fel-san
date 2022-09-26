@@ -8,10 +8,12 @@ $(EXPORT_DIR):
 
 .PHONY: test
 cv01-voluntary-elections-hw: $(EXPORT_DIR)
-	$(ZIP) -j $(EXPORT_DIR)/$@-$(HW_SUFFIX)-brute.zip \
-		src/cv01/elections.R \
-		src/cv01/elections/GlobalElections_Czech\ elections.csv \
-		src/cv01/elections/labels.csv
+	cd src/cv01 && $(ZIP) ../../$(EXPORT_DIR)/$@-$(HW_SUFFIX)-brute.zip \
+		elections.R \
+		cz_lower_house_elections_2006.png \
+		elections_attendence.pdf \
+		elections/GlobalElections_Czech\ elections.csv \
+		elections/labels.csv
 
 .PHONY: clean
 clean:
