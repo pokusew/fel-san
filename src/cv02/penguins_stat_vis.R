@@ -73,12 +73,16 @@ summary_table <- penguins_clean %>%
   summarise(mean_weight = mean(body_mass_g))
 
 # But the mean is by itself useless. Why?
+# - outliers
+# - median vs mode vs mean
 # Add standard deviation, which is a measure of how spread the values are
 summary_table <- penguins_clean %>%
   select(species, body_mass_g) %>%
   group_by(species) %>%
-  summarise(mean_weight_g = mean(body_mass_g),
-            sd_weight_g = sd(body_mass_g))
+  summarise(
+    mean_weight_g = mean(body_mass_g),
+    sd_weight_g = sd(body_mass_g)
+  )
 
 # Are the differences in SD big or small? Let's visualize
 penguins_clean %>%
@@ -94,8 +98,8 @@ penguins_clean %>%
 adelie_df <- penguins_clean %>%
   filter(species == 'Adelie')
 # Reference value (uncomment)
-#sd(adelie_df$body_mass_g)
-adelie.var <- sum((000 - 000)^2) / (000 - 1)
+sd(adelie_df$body_mass_g)
+adelie.var <- sum((adelie_df$body_mass_g - mean(adelie_df$body_mass_g))^2) / (length(adelie_df$body_mass_g) - 1)
 adelie.sd <- sqrt(adelie.var)
 
 # Better way to visualize the spread of values - histogram
@@ -109,13 +113,14 @@ penguins_clean %>%
 penguins_clean %>%
   filter(species %in% c('Adelie', 'Chinstrap')) %>%
   ggplot(aes(x = body_mass_g, col = species)) +
+  # note: it seems that it works without `aes(y = ..density..)` as well
   geom_density(aes(y = ..density..)) +
   xlim(2000, 5000) +
   theme_minimal()
 
 # --------------
 # Draw graphs for each species
-for (i in 1:nrow(summary_table)) {
+for (i in seq_len(nrow(summary_table))) {
   peng_mean <- summary_table$mean_weight_g[i]
   peng_sd <- summary_table$sd_weight_g[i]
   peng <- summary_table$species[i]
