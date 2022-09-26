@@ -1,0 +1,3 @@
+# https://github.com/github/linguist#overrides
+/src/*/task/** linguist-generated
+/src/*/data/** linguist-generated
