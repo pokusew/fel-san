@@ -2,9 +2,6 @@
 ## This script stems from the lab accompanying Chapter 3 of Introduction to Statistical Learning
 
 # collection of demo data sets and functions (we will use Boston dataset)
-# see Boston dataset's issues:
-#   https://github.com/scikit-learn/scikit-learn/issues/16155
-#   https://medium.com/@docintangible/racist-data-destruction-113e3eff54a8
 library("MASS")
 # tutorial data sets
 library("ISLR")
@@ -16,21 +13,21 @@ help(Boston) # learn the structure of the dataset, 506 areas described by 14 var
 # Look at relationship between lstat (the percent of households with low socioeconomic status in the neighborhood)
 # and medv (median value of homes in $1000.)
 Boston %>%
-  ggplot(aes(x = crim, y = medv)) +
+  ggplot(aes(x = lstat, y = medv)) +
   geom_point()
 
 ## Simple linear regression
 ## Start with a basic regression using the lm(y ~ x, data) function
-lm.fit <- lm(medv ~ crim, data = Boston)
+lm.fit <- lm(medv ~ lstat, data = Boston)
 
 # visualize the relationship between indep and dep variable
 Boston %>%
-  ggplot(aes(x = crim, y = medv)) +
+  ggplot(aes(x = lstat, y = medv)) +
   geom_point() +
   # visualize the fit
-  geom_abline(slope = lm.fit$coefficients["crim"],
+  geom_abline(slope = lm.fit$coefficients["lstat"],
               intercept = lm.fit$coefficients["(Intercept)"],
-              size = 1, col = "red") +
+              size = 1, col = 'red') +
   ggtitle("Relationship between lower status popuation and house prices")
 
 summary(lm.fit) # see the model
@@ -60,17 +57,19 @@ which.max(hatvalues(lm.fit)) # find the observation with the largest leverage
 
 nlm.fit <- lm(medv ~ poly(lstat, 2), data = Boston) # just see the improvement with the most simple polynomial regression
 summary(nlm.fit) # explains around 10% variance more
-plot(predict(nlm.fit), residuals(nlm.fit)) # residual plot looks much better (still not normal error distribution)
+plot(nlm.fit) # residual plot looks much better (still not normal error distribution)
 anova(lm.fit, nlm.fit) # the second model is significantly better, sum of sq is positive, p-value small
+# We will look at ANOVA in next labs, but the concept is not new - it's an F-test that compares 2 models via their R2 scores
 
 ## Multiple linear regression
-# Use multiple/all/relevant predictors at once, in a single model
+# Use multiple/all/relevant predictors at once, in a single model the available independent variables
+lm.fit.all <- lm(medv ~ ., data = Boston)
 
-lm.fit.all <- lm(medv ~ ., data = Boston) # employ all the available independent variables
 summary(lm.fit.all) # model improves again, only some of the variables seem to be unimportant, we may want to exclude them
+
 lm.fit.exclude <- lm(medv ~ . - age - indus, data = Boston) # truly exclude age and indus
 summary(lm.fit.exclude) # the simpler model seems to maintain the performance of the previous model
-anova(lm.fit.all, lm.fit.exclude) # no difference, the simpler model preferred
+anova(lm.fit.all, lm.fit.exclude) # no difference, the simpler model pref
 
 ## Finally, try some feature selection methods
 step <- stepAIC(lm.fit.all, direction = "both") # stepwise regression, based on AIC criterion, taken from MASS library
@@ -78,17 +77,37 @@ step$anova # display results, actually does the same as we did manually, removes
 
 # Fit LASSO to remove unimportant predictors
 library("glmnet") # lasso
+
 lambda_grid <- 10^seq(10, -3, length = 200)
-lasso.model <- glmnet(as.matrix(Boston[, -ncol(Boston)]), Boston$medv, alpha = 1, lambda = lambda_grid, standardize = TRUE)
-lasso.cv.out <- cv.glmnet(as.matrix(Boston[, -ncol(Boston)]), Boston$medv, alpha = 1)
-plot(lasso.cv.out) # small lambda values preferred, shrinkage effect is small
+BostonX <- Boston %>% dplyr::select(-medv) %>% as.matrix()
+
+lasso.model <- glmnet(x = BostonX,
+                      y = Boston$medv,
+                      alpha = 1,
+                      lambda = lambda_grid,
+                      standardize = TRUE)
+plot(lasso.model, "lambda", label = TRUE) # See regularization in action
+
+# Lambda controls RMSE-shrinkage trade-off. Determine its 'optimal' value
+lasso.cv.out <- cv.glmnet(x = BostonX,
+                          y = Boston$medv,
+                          alpha = 1)
+# Plot lambda vs. RMSE
+plot(lasso.cv.out)
 lasso.lambda <- lasso.cv.out$lambda.min
+
+# Obtain coefficients corresponding to given lambda
 lasso.coefficients <- predict(lasso.model, type = "coefficients", s = lasso.lambda)
 
 # Display the coefficients and selected variables
 print("LASSO coefficients:")
-print(as.matrix(lasso.coefficients)) # the absolute coefficent values influenced by the scale of the individual variables, nox has a small scale
-print(as.matrix(lasso.coefficients)[seq(2, length(Boston) - 1),] != 0) # removes indus and age too
+print(lasso.coefficients) # the absolute coefficient values influenced by the scale of the individual variables, nox has a small scale
+print(as.matrix(lasso.coefficients)[seq(2, length(Boston) - 1),] != 0)
+
+## Questions
+# 1. What procedure is used to choose lambda?
+# 2. Compare lasso.cv.out$lambda.min and lasso.cv.out$lambda.1se - find them in the plot(lasso.cv.out). Which one do you prefer and why?
+# 3. How lasso differs from ridge and how would you perform ridge regression? (hint: look at what parameters were used in the glmnet function)
 
 ## Summary
 # To avoid overfitting and increase simplicity and understandability of the model, only relevant features should be used.
