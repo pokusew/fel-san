@@ -1,0 +1,299 @@
+---
+title: "lda_tutorial"
+output: html_document
+---
+
+## Illustrative example of LDA
+The dataset holds data on weight, height and gender of 10000 individuals and was taken from <https://www.kaggle.com/mustafaali96/weight-height>
+
+```{r echo=FALSE}
+library(MASS)
+library(ggplot2)
+library(dplyr)
+source("decision_plot.R")
+```
+
+```{r}
+life_data <- read.csv("weight-height.csv")
+
+# height in inches, weight in pounds, transform to cm and kg
+life_data <- life_data %>%
+  mutate(Height = Height * 2.54,
+         Weight = life_data$Weight * 0.454,
+         Gender = as.factor(Gender))
+
+glimpse(life_data)
+```
+
+## Analyse height only
+First, consider only the height
+
+```{r}
+# visualize the data
+life_data %>% ggplot(aes(x=Gender, y=Height, fill=Gender)) + 
+  geom_boxplot()
+
+life_data %>% ggplot(aes(x=Height, fill=Gender)) +
+  geom_density(alpha=0.6)
+```
+
+## Perform the classification tasks with Logistic regression
+```{r}
+# run Logistic regression - start with a simple Height model
+lr <- glm(Gender ~ Height, life_data, family=binomial)
+# Look the model - does a coefficient for Height have any (meaningful) interpretation?
+# Maybe revise what quantity the Y = B0+B1x1+... represents in the logistic regression
+lr
+
+# Obtain the probability of being a Man for train data
+lr_prob <- predict(lr, life_data, type="response")
+gender_pred <- lr_prob > 0.5
+
+# Compare the 2 calls below. Can you guess how do they differ and how to get from one to the other?
+# HINT: Recall, how to get from Y = B0+B1x1+... to the probability
+predict(lr, life_data, type="response") %>% head
+predict(lr, life_data)                  %>% head
+```
+
+```{r}
+my_accuracy <- function(preds, reference, print_confmat=FALSE){
+  confusion_mat <- table(preds, reference)
+  acc <- (confusion_mat %>% diag %>% sum) / sum(confusion_mat)
+  
+  if(print_confmat){
+    cat("\nConfusion matrix:\n")
+    print(confusion_mat)
+  }
+  cat("\n", sprintf("Accuracy: %s", acc), "\n")
+  
+}
+
+# Evaluate accuracy of Logistic regression
+my_accuracy(gender_pred, life_data$Gender, print_confmat = TRUE)
+
+# Using the sigmoid data, estimate the decision boundary of the logistic regression
+lr_decisionBoundary <- sigmoid_data %>% filter(lr_prob > 0.5) %>% pull(Height) %>% min()
+sprintf("LR decision boundary: %s", lr_decisionBoundary)
+
+# Plot the sigmoid
+sigmoid_data <- life_data %>%
+  mutate(lr_prob = lr_prob,
+         gender_num = as.numeric(Gender) - 1)
+
+sigmoid_data %>%   
+  ggplot(aes(x=Height, y=lr_prob)) +
+  geom_point(col="red") +
+  geom_point(aes(x=Height, y=gender_num)) +
+  # Logistic regression decision boundary
+  geom_vline(xintercept = lr_decisionBoundary, col="blue") +
+  geom_hline(yintercept = 0.5, linetype="dotted") +
+  ylab("P(Gender=Male|Height)")
+
+```
+
+### Fit LR with both Height and Weight
+```{r}
+# First, observe, how the multivariate normal distributions of Height + Weight looks
+life_data %>%
+  ggplot(aes(x=Height, y=Weight, col=Gender)) +
+  geom_point(alpha=0.1)
+
+lr_hw <- glm(Gender ~ ., life_data, family=binomial)
+lr_hw
+
+# Predict the gender and assess the accuracy
+gender_pred <- predict(lr_hw, life_data, type = "response") > 0.5
+my_accuracy(gender_pred, life_data$Gender)
+
+# Plotting decision boundary
+class(lr_hw) <- c("lr", class(lr_hw)) # a bit of adjusting for plotting the decision boundary
+# the decision boundary is linear!
+predict.lr <- function(object, newdata, ...)
+  predict.glm(object, newdata, type = "response") > .5
+decisionplot(lr_hw, life_data, class = "Gender", main = "Logistic regression", resolution=200) 
+
+# Question: Why is the logistic regression decision boundary linear?
+# HINT: Refer again to the equation of LR. What probability do the points lying on the decision boundary have?
+```
+
+## LDA
+```{r}
+# run LDA
+lda_res <- lda(Gender ~ Height, life_data)
+lda_res
+
+# Take look at the predicted posterior probabilities for each gender
+gender_pred <- predict(lda_res, life_data)
+# View(gender_pred$posterior)
+
+# Check the confusion matrix and the accuracy of predictions
+my_accuracy(gender_pred$class, 
+            life_data$Gender,
+            print_confmat = TRUE)
+```
+
+```{r}
+# Can you guess, what is the threshold value by which we discriminate genders (in a good way)?
+# You can use this DF
+gender_pred_df <- data.frame(
+  Height = life_data$Height,
+  Gender_pred = gender_pred$class
+)
+
+# Un-comment to view the predictions
+# View(gender_pred_df)
+
+lda_decisionBoundary <- gender_pred_df %>% 
+  filter(Gender_pred == "Female") %>% 
+  dplyr::select(Height) %>% 
+  max
+
+# compared to lr_decBoundary, a tiny difference exists
+lda_decisionBoundary
+lr_decisionBoundary
+```
+
+## Understand LDA by arriving at the same results yourself
+The core of LDA is the Bayes theorem (hover to see the human-readable format). 
+$ Pr(Male|Height) = \frac{Pr(Height|Male)} {Pr(Height|Male) + Pr(Height|Female)}$
+Note that the above expression is a simplified form of the theorem since the prior probabilities of genders are the same $P(Male)=P(Female)$
+LDA further assumes the distributions of heights in each gender to be normal $Pr(Height|Male) \sim \mathcal{N}(\mu,\sigma^2)$. All you need to do is to estimate parameters of the normal distributions and use them in the Bayes formula.
+
+```{r echo=FALSE}
+# men and women normal distribution parameters
+mu_f <- mean(life_data$Height[life_data$Gender == "Female"])
+mu_m <- mean(life_data$Height[life_data$Gender == "Male"])
+sd_f <- sd(life_data$Height[life_data$Gender == "Female"])
+sd_m <- sd(life_data$Height[life_data$Gender == "Male"])
+sd_all <- (sd_m + sd_f)/2 # force the LDA assumption of equal variance
+
+# Calculate the posteriors for being a Male for all heights
+# HINT: The function dnorm(x, mean, sd) will output the density Pr(x) in the normal distribution characterized by the mean and sd parameters. Accepts also vectors as inputs 'x'
+postM <- _____
+
+# First, check the posterior values
+head(postM)
+# Male posteriors should match those computed previously, very small deviations can exist
+head(gender_pred$posterior)
+
+# Then, turn posteriors into classes (Male/Female; 1/0 are fine too)
+gender_pred <- postM > 0.5
+
+# Evaluate the accuracy
+my_accuracy(gender_pred, life_data$Gender)
+# Note: the train accuracy of Logistic regression was 0.8326
+
+# Now we also know, where did the decision boundary found previously come from. Compare:
+(mu_f + mu_m) / 2
+lda_decisionBoundary
+```
+
+### Plot the LDA decision boundary 
+```{r}
+# Create normal approximations of our data (i.e the "ideal data") that LDA internally works with
+height_seq <- seq(min(life_data$Height), max(life_data$Height), length.out=nrow(life_data)/2)
+
+ideal_life_data <- data.frame(
+  height=height_seq, 
+  # Densities of heights under the normality assumption
+  Female=dnorm(height_seq, mean=mu_f, sd=sd_all), 
+  Male = dnorm(height_seq, mean=mu_m, sd=sd_all)
+) 
+
+# Reshape for plotting purposes
+ideal_life_data <- ideal_life_data %>%
+  reshape2::melt(id.vars="height", variable.name = "Gender")
+
+# Plot the distributions, their normal approximations and the decision boundary (or point in this 1D case)
+life_data %>% ggplot(aes(x=Height, fill=Gender)) +
+  geom_density(alpha=0.6) +
+  geom_line(data = ideal_life_data, aes(x=height, y=value), linetype = 2)  +
+  # Add the decision boundary
+  geom_vline(xintercept = (mu_f + mu_m) / 2, size=1) +
+  ggtitle("Decision boundary\n (dotted lines indicate normal approximations)") +
+  theme_minimal()
+
+# standard deviations averaged, decision boundary does not cross the intersection of class densities in the real case
+```
+
+### Work with both height and weight
+As with Logistic Regression, let's include all features in our model. 
+```{r}
+# run LDA function
+lda_hw <- lda(Gender ~ ., life_data)
+lda_hw
+
+gender_pred <- predict(lda_hw, life_data)$class
+
+# Accuracy, by 8% better than with Height only
+my_accuracy(gender_pred, life_data$Gender)
+
+decisionplot(lda_hw, life_data, class = "Gender", main = "LDA", resolution=200)
+
+# Question: Again, why is the decision boundary linear?
+# Short answer: Using the formula for the normal distribution density and setting P(man|X)=P(woman|X) we can 
+# derive a term for the boundary, which will be linear in X. 
+# For details refer to "Introduction to statistical learning in R", page 142
+
+```
+
+With two features, the Bayes formula extends to:
+$Pr(Male|Heigh,Weight) = \frac{Pr(Heigh,Weight|Male)} {Pr(Heigh,Weight|Male) + Pr(Heigh,Weight|Female)}$
+```{r}
+# estimate parameters of distributions, substitute them into the Bayes formula
+library(mvtnorm)
+mu_f <- colMeans(life_data[life_data$Gender=="Female",c(2,3)])
+mu_m <- colMeans(life_data[life_data$Gender=="Male",c(2,3)])
+cov_f <- cov(life_data[life_data$Gender=="Female",c(2,3)])
+cov_m <- cov(life_data[life_data$Gender=="Male",c(2,3)])
+cov_avg <- (cov_f + cov_m)/2
+
+# Again, compute the posterior for the samples (simplified by the fact that P(Male)=P(Female))
+postM <- dmvnorm(life_data[c(2,3)], mu_m, cov_avg) / 
+  (dmvnorm(life_data[c(2,3)], mu_m, cov_avg) + dmvnorm(life_data[c(2,3)], mu_f, cov_avg))
+head(postM)
+
+gender_pred <- postM > 0.5
+
+my_accuracy(gender_pred, life_data$Gender)
+# The train accuracy of Logistic regression was 0.9194
+```
+
+##QDA
+```{r}
+# run QDA
+qda_res <- qda(Gender ~ .,life_data)
+qda_res
+
+gender_pred <- predict(qda_res, life_data)$class
+
+# Evaluate accuracy
+confusion_mat <- table(gender_pred, life_data$Gender)
+(confusion_mat %>% diag %>% sum) / sum(confusion_mat) # almost the same train accuracy as LDA, more freedom does not help here
+
+decisionplot(qda_res, life_data, class = "Gender", main = "QDA", resolution=200) # decision boundary close to linear
+qda_res$scaling # both the genders scale nearly equally (scaling transforms the observations so that within-group covariance matrices are spherical)
+var(as.matrix(subset(life_data, Gender=="Male",2:3)) %*% qda_res$scaling[,,"Male"]) # after scaling, the group variances equal 1 and covariances 0
+```
+
+
+```{r}
+# The decision boundary of logistic regression seem to be indistinguishable from the one of LDA
+# The decision boundary is linear!
+decisionplot(lda_hw, life_data, class = "Gender", main = "Logistic regression", resolution=200) 
+
+# Look however at the coefficients of Logistic regression and LDA. Why they are different and what meaning they have?
+print("Logistic regression coefficients:")
+coef(lr_hw)
+
+print("LDA coefficients:")
+coef(lda_hw)
+```
+## Independent work
+Which method is expected to work best on test data in this task (LDA, QDA or LR)? Answer without testing first.
+Experimentally verify your answer, remember that you may need to deal with smaller train sets to see any difference ...
+
+It is LDA that is supposed to work best in this task. Its assumptions are clearly met, QDA will tend to overfit while logistic regression will suffer from missing parametric assumptions.
+
+### Verification
+```
