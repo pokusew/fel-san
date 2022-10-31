@@ -6,7 +6,7 @@ HW_SUFFIX = b4m36san
 $(EXPORT_DIR):
 	mkdir -p $(EXPORT_DIR)
 
-.PHONY: test
+.PHONY: cv01-voluntary-elections-hw
 cv01-voluntary-elections-hw: $(EXPORT_DIR)
 	cd src/cv01 && $(ZIP) ../../$(EXPORT_DIR)/$@-$(HW_SUFFIX)-brute.zip \
 		elections.R \
