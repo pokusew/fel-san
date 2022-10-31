@@ -1,6 +1,6 @@
 ---
 title: "SAN Assignment - regression"
-author: "Your Name <e-mail@fel.cvut.cz>"
+author: "Martin Endler <endlemar@fel.cvut.cz>"
 output:
   pdf_document: default
 ---
@@ -9,11 +9,11 @@ output:
 Fill in your name above for clarity.
 To solve this homework, simply write your answers into this document and fill in the marked pieces of code.
 Submit your solution consisting of both this modified Rmd file and a knitted PDF document as an archive to the courseware BRUTE upload system for the SAN course.
-The deadline is specified there. 
+The deadline is specified there.
 
 ## Initialization
 
-Load the required libraries `gtools`, `caret` and `glmnet`, make sure you have those installed. We also fix the random seed for reproducibility convenience. 
+Load the required libraries `gtools`, `caret` and `glmnet`, make sure you have those installed. We also fix the random seed for reproducibility convenience.
 
 ```{r}
 require(gtools);
@@ -34,14 +34,14 @@ n.dimensions <- 100 # Number of n.dimensions, a.k.a. attributes or features
 ### Model evaluation procedure
 
 The function `learnAndTest` takes a matrix of independent variables values `X` and a corresponding vector
-of dependent variable (a.k.a. response) `Y` then trains and evaluates a model specified by the `modelType` parameter. 
+of dependent variable (a.k.a. response) `Y` then trains and evaluates a model specified by the `modelType` parameter.
 If you are interested in all possible `modelType` parameter values, refer to [http://topepo.github.io/caret/train-models-by-tag.html](http://topepo.github.io/caret/train-models-by-tag.html).
-Here we will only be using three: `"lm"` for ordinary least squares and `"glmnet"` with parameter `alpha = 1` resp. `alpha = 0` for LASSO resp. Ridge. (There are also `lasso` and `ridge` methods you may try, but these have inconsistent API for passing lambda.) This function learns the model from the data and estimates it's accuracy using cross validation. The results is then printed to output. For purpose of this assignment, consider only the RMSE (root-mean-square error) criterion. 
+Here we will only be using three: `"lm"` for ordinary least squares and `"glmnet"` with parameter `alpha = 1` resp. `alpha = 0` for LASSO resp. Ridge. (There are also `lasso` and `ridge` methods you may try, but these have inconsistent API for passing lambda.) This function learns the model from the data and estimates it's accuracy using cross validation. The results is then printed to output. For purpose of this assignment, consider only the RMSE (root-mean-square error) criterion.
 
 ```{r}
 learnAndTest <- function(X, Y, modelType, ...) {
   data <- data.frame(X, Y)
-  
+
   train.control <- trainControl(method = "cv", number = 10) # 10-fold cross-validataion
   # Alternative to get more accurate, but slower evaluation:
   # train.control <- trainControl(method = "LOOCV")
@@ -52,7 +52,7 @@ learnAndTest <- function(X, Y, modelType, ...) {
                  method = modelType,
                  trControl = train.control,
                  ...)
-  
+
 }
 ```
 
@@ -71,7 +71,7 @@ X <- replicate(n.dimensions,
     runif(n.samples, min = -10, max = 10))
 
 # Randomly generates the actual underlying coefficients of the linear dependency
-coefs <- runif(n.dimensions, min = 1, max = 4) 
+coefs <- runif(n.dimensions, min = 1, max = 4)
 intercept <- 0 # For simplicity
 
 # Synthesizes dependent variable (observed values) by the given linear dependency plus noise
@@ -93,26 +93,26 @@ print(learnAndTest(X, Y, "glmnet", tuneGrid = lambda_lasso))
 ### Task 1:
 **Answer the following questions:**
 
-  * What change in the learned model would you anticipate if we changed the `mean` parameter value to a different constant in the noise generation? You may answer this either by talking about the coefficients or by giving a geometrical interpretation. **Answer:**  
-  * In our example we generated samples (i.e. the independent variables `X`) from uniform distribution. The least squares  method, on the other hand, has something called the "normality assumption". Have we violated that assumption? Justify. **Answer:** 
-  * Which method gave the best results? Is it the most common one to do so if you re-run the test several times? Why do you think it performs better the best? **Answer:** 
-  * Check the selected values for the lambda parameter for ridge and LASSO. Are they low or high? How does it relate to the above answer? **Answer:** 
+  * What change in the learned model would you anticipate if we changed the `mean` parameter value to a different constant in the noise generation? You may answer this either by talking about the coefficients or by giving a geometrical interpretation. **Answer:**
+  * In our example we generated samples (i.e. the independent variables `X`) from uniform distribution. The least squares  method, on the other hand, has something called the "normality assumption". Have we violated that assumption? Justify. **Answer:**
+  * Which method gave the best results? Is it the most common one to do so if you re-run the test several times? Why do you think it performs better the best? **Answer:**
+  * Check the selected values for the lambda parameter for ridge and LASSO. Are they low or high? How does it relate to the above answer? **Answer:**
 
 ## Least squares assumptions
 
 The data generation model assumed by the ordinary least squares method can be mathematically written as follows:
 $$Y = \mathbf{X}^T \boldsymbol{\beta} + \beta_0 + G, \; G \sim \mathcal{N}(0, \sigma^2)$$
 This formula implicitly expresses some of the assumptions about the data,
-required for the method to work reliably.  
+required for the method to work reliably.
 
-  * The observed value $Y$ is influenced by some Gaussian noise $G$.  
-  * There truly exists an underlying linear dependency. 
+  * The observed value $Y$ is influenced by some Gaussian noise $G$.
+  * There truly exists an underlying linear dependency.
   * The noise is homoscedastic ($\sigma^2$ is a constant).
-  
+
 ### Task 2:
 First of all, make sure you understand how elements of this formula correspond to the code in the "data generation" section.
 
-Your task is to violate each of these assumptions (one at a time) and **briefly** comment the changes in the learned model by statistically comparing it to model using the above data. (Coefficient summary below.) The catch here is that you are allowed to only modify the noise generation procedure to achieve that. Attempt to find a way of violating the assumptions to achieve a clear difference, but any solution that is technically correct will be awarded full points. 
+Your task is to violate each of these assumptions (one at a time) and **briefly** comment the changes in the learned model by statistically comparing it to model using the above data. (Coefficient summary below.) The catch here is that you are allowed to only modify the noise generation procedure to achieve that. Attempt to find a way of violating the assumptions to achieve a clear difference, but any solution that is technically correct will be awarded full points.
 
 It is sufficient to look at the `summary` of the OLS model.
 
@@ -126,7 +126,7 @@ summary(learnAndTest(X, Y, "lm"))
 noise <- rnorm(n.samples, sd = 8, mean = 0) # REPLACE THIS WITH YOUR CODE
 
 # KEEP THE CODE BELOW
-Y <- (X %*% coefs) + intercept + noise 
+Y <- (X %*% coefs) + intercept + noise
 summary(learnAndTest(X, Y, "lm"))
 ```
 **Your comment:**
@@ -137,10 +137,10 @@ summary(learnAndTest(X, Y, "lm"))
 noise <- rnorm(n.samples, sd = 8, mean = 0) # REPLACE THIS WITH YOUR CODE
 
 # KEEP THE CODE BELOW
-Y <- (X %*% coefs) + intercept + noise 
+Y <- (X %*% coefs) + intercept + noise
 summary(learnAndTest(X, Y, "lm"))
 ```
-**Your comment:** 
+**Your comment:**
 
 
 #### Violate homoscedasticity
@@ -148,27 +148,27 @@ summary(learnAndTest(X, Y, "lm"))
 noise <- rnorm(n.samples, sd = 8, mean = 0) # REPLACE THIS WITH YOUR CODE
 
 # KEEP THE CODE BELOW
-Y <- (X %*% coefs) + intercept + noise 
+Y <- (X %*% coefs) + intercept + noise
 summary(learnAndTest(X, Y, "lm"))
 ```
-**Your comment:** 
+**Your comment:**
 
-## Understanding the advantages of shrinkage methods 
+## Understanding the advantages of shrinkage methods
 
-In this part, we will be modifying the dependent variables `X` from task 1 by a linear transformation, represented by a square matrix of `n.dimensions` sides. 
+In this part, we will be modifying the dependent variables `X` from task 1 by a linear transformation, represented by a square matrix of `n.dimensions` sides.
 For demonstration, consider that the identity function represented by the identity matrix:
 ```{r}
 M0 <- diag(n.dimensions)     # Makes an identity matrix
-X0 <-  X %*% M0              # You can check that X0 == X 
-noise <- rnorm(n.samples, sd = 8, mean = 0) 
-Y0 <- (X0 %*% coefs) + noise # We can reuse the noise as it's independent of X. 
+X0 <-  X %*% M0              # You can check that X0 == X
+noise <- rnorm(n.samples, sd = 8, mean = 0)
+Y0 <- (X0 %*% coefs) + noise # We can reuse the noise as it's independent of X.
 ```
 
 ### Task 3
 
 In this task, you will show your understanding of the advantages of Ridge by synthesizing data on which they perform the best. You are supposed do this by linearly transforming the dataset `X` as in the example above. In other words, you should construct a matrix which if used in place of `M0` in the above example would make Ridge perform better than the other two methods. You should not resort to degenerate cases where you would get a warning about using a rank-deficient matrix. Justify your method.
 
-**Scoring note:** The difference in the RMSE criterion doesn't need to be large or does not need to be present if you are certain it's just an statistical artifact (which you could verify by re-running the tests multiple times or using the LOOCV in `learnAndTest` function). Your design and justification is what matters for the assignment evaluation and the measurements are here only to guide you. We expect this task to be challenging to students, but once you get the right idea, it is possible to implement it with very small amount of code. 
+**Scoring note:** The difference in the RMSE criterion doesn't need to be large or does not need to be present if you are certain it's just an statistical artifact (which you could verify by re-running the tests multiple times or using the LOOCV in `learnAndTest` function). Your design and justification is what matters for the assignment evaluation and the measurements are here only to guide you. We expect this task to be challenging to students, but once you get the right idea, it is possible to implement it with very small amount of code.
 
 #### Ridge
 ```{r}
@@ -176,24 +176,24 @@ M1 <- diag(n.dimensions) # REPLACE THIS WITH YOUR CODE
 
 # KEEP THE CODE BELOW
 noise <- rnorm(n.samples, sd = 8, mean = 0)
-X1 <-  X %*% M1 
+X1 <-  X %*% M1
 Y1 <- (X1 %*% coefs) + noise
 ```
 
-Running these test should now make Ridge perform the best. 
+Running these test should now make Ridge perform the best.
 ```{r}
 print(learnAndTest(X1, Y1, "lm"))
 print(learnAndTest(X1, Y1, "ridge"))
 print(learnAndTest(X1, Y1, "lasso"))
 ```
-**Justification:** 
+**Justification:**
 
 
 #### LASSO (OPTIONAL CHALLENGE)
-This part of the homework is purely optional, but we are eager to see students capable of solving this. 
+This part of the homework is purely optional, but we are eager to see students capable of solving this.
 Here you should do the same thing as above, but to make perform LASSO the best of the three methods.
 Although similar in nature, we consider this even more challenging than the above
-since being unable to modify the underlying coefficients, 
+since being unable to modify the underlying coefficients,
 this may require some deeper considerations to justify the transformation method.
 It can still be implemented with a few short lines of code, though.
 
@@ -206,10 +206,10 @@ X2 <-  X %*% M2
 Y2 <- (X2 %*% coefs) + noise
 ```
 
-Running these test should now make LASSO perform the best. 
+Running these test should now make LASSO perform the best.
 ```{r}
 print(learnAndTest(X2, Y2, "lm"))
 print(learnAndTest(X2, Y2, "ridge"))
 print(learnAndTest(X2, Y2, "lasso"))
 ```
-**Justification:** 
+**Justification:**
