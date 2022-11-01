@@ -246,20 +246,23 @@ this may require some deeper considerations to justify the transformation method
 It can still be implemented with a few short lines of code, though.
 
 ```{r}
-M2 <- diag(n.dimensions) # REPLACE THIS WITH YOUR CODE
+# 1. Start with the identity transformation.
+M2 <- diag(n.dimensions)
+# 2. Let's randomly select 80 % of the features (which we'll make unimportant by scaling the values).
+M2.unimportant_fraction <- 0.8
+M2.selection <- sample(n.dimensions, replace = FALSE, size = round(M2.unimportant_fraction * n.dimensions))
+M2.unimportant_idxs <- M2.selection
 
-M2.selection <- sample(n.dimensions, replace = FALSE, size = 80)
-M2.unimportant <- M2.selection
-# M2.unimportant <- M2.selection[26:50]
-
-# M2[,M2.important] <- M2[,M2.important] * 10
-# M2[,M2.unimportant] <- M2[,M2.unimportant] * 0.001
-M2[,M2.unimportant] <- M2[,M2.unimportant] * (1/(coefs[M2.unimportant]*1000))
+# Update the transformation matrix so that it will scale down the selected features when applied.
+# Note: We know the magnitude of the coefficients in our case, so we can choose correct scaling factor.
+# We can also add the term `* (1/coefs[M2.unimportant_idxs])` (assumming abs(coefs) > 1)
+# to further normalize the scaling factor.
+M2[,M2.unimportant_idxs] <- M2[,M2.unimportant_idxs] * 0.001 * (1/coefs[M2.unimportant_idxs])
+# M2[,M2.unimportant_idxs] <- M2[,M2.unimportant_idxs] * 0.001 # also works great
 
 # KEEP THE CODE BELOW
 noise <- rnorm(n.samples, sd = 8, mean = 0)
 X2 <- X %*% M2
-Y2_wo_noise <- (X2 %*% coefs)
 Y2 <- (X2 %*% coefs) + noise
 ```
 
@@ -269,4 +272,4 @@ print(learnAndTest(X2, Y2, "lm"))
 print(learnAndTest(X2, Y2, "ridge"))
 print(learnAndTest(X2, Y2, "lasso"))
 ```
-**Justification:**
+**Justification:** Generally, LASSO performs better when the response is a function of only a relatively small number of predictors. We can adjust the data by a linear transformation to make it the case. We create a scaling matrix that scales down a selected subset of features (making them unimportant) which also affects the linear regression coefficients. This in turn pushes LASSO to perform variable selection (forcing some of the coefficient estimates to be exactly equal to zero when lambda is sufficiently large). We ran the tests multiple times for our transformation and in all instances, the LASSO was the best (lowest RMSE, with a difference of around 1).
