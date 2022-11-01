@@ -126,35 +126,46 @@ summary(learnAndTest(X, Y, "lm"))
 
 #### Violate noise normality
 ```{r}
-noise <- rnorm(n.samples, sd = 8, mean = 0) # REPLACE THIS WITH YOUR CODE
+noise <- runif(n.samples, min = -4, max = 4)
 
 # KEEP THE CODE BELOW
 Y <- (X %*% coefs) + intercept + noise
 summary(learnAndTest(X, Y, "lm"))
 ```
-**Your comment:**
+**Your comment:** overfit
 
 
 #### Violate linearity
 ```{r}
-noise <- rnorm(n.samples, sd = 8, mean = 0) # REPLACE THIS WITH YOUR CODE
+noise <- X^4 %*% coefs
 
 # KEEP THE CODE BELOW
 Y <- (X %*% coefs) + intercept + noise
 summary(learnAndTest(X, Y, "lm"))
 ```
-**Your comment:**
-
+**Your comment:** We violated the linearity by adding a non-linear term (the fourth power, `X^4 %*% coefs`). The F-statistic is almost equal to 1, which means that the model has no predictive capability (i.e., it is as good as an intercept-only model).
 
 #### Violate homoscedasticity
 ```{r}
-noise <- rnorm(n.samples, sd = 8, mean = 0) # REPLACE THIS WITH YOUR CODE
+# seq(from = 2, to = 32, length.out = n.samples)
+Y_without_noise <- (X %*% coefs) + intercept
+Y_normalized_01 <- (Y_without_noise - min(Y_without_noise)) / (max(Y_without_noise) - min(Y_without_noise))
+variable_sd <- Y_normalized_01 * 32
+noise <- rnorm(n.samples, sd = seq(from = 2, to = 32, length.out = n.samples), mean = 0)
+plot(noise)
 
 # KEEP THE CODE BELOW
 Y <- (X %*% coefs) + intercept + noise
-summary(learnAndTest(X, Y, "lm"))
+hd_model <- learnAndTest(X, Y, "lm")
+hd_model.redisdual_plot_data <- data.frame(
+	my_res = hd_model$finalModel$residuals,
+	my_y = hd_model$finalModel$fitted.values
+)
+ggplot(hd_model.redisdual_plot_data, aes(x = my_y, y = my_res)) +
+	geom_point(size = 2)
+summary(hd_model)
 ```
-**Your comment:**
+**Your comment:** We violated the homoscedasticity by making the variance non-constant.
 
 ## Understanding the advantages of shrinkage methods
 
