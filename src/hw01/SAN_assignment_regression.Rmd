@@ -163,25 +163,13 @@ summary(learnAndTest(X, Y, "lm"))
 
 #### Violate homoscedasticity
 ```{r}
-# seq(from = 2, to = 32, length.out = n.samples)
-Y_without_noise <- (X %*% coefs) + intercept
-Y_normalized_01 <- (Y_without_noise - min(Y_without_noise)) / (max(Y_without_noise) - min(Y_without_noise))
-variable_sd <- Y_normalized_01 * 32
-noise <- rnorm(n.samples, sd = seq(from = 2, to = 32, length.out = n.samples), mean = 0)
-plot(noise)
+noise <- rnorm(n.samples, sd = seq(from = 4, to = 32, length.out = n.samples), mean = 0)
 
 # KEEP THE CODE BELOW
 Y <- (X %*% coefs) + intercept + noise
-hd_model <- learnAndTest(X, Y, "lm")
-hd_model.redisdual_plot_data <- data.frame(
-	my_res = hd_model$finalModel$residuals,
-	my_y = hd_model$finalModel$fitted.values
-)
-ggplot(hd_model.redisdual_plot_data, aes(x = my_y, y = my_res)) +
-	geom_point(size = 2)
-summary(hd_model)
+summary(learnAndTest(X, Y, "lm"))
 ```
-**Your comment:** We violated the homoscedasticity by making the variance non-constant.
+**Your comment:** We violated the homoscedasticity by making the variance non-constant. Compared to the model trained on the original data, this model has much lower F-statistic and bigger RSE.
 
 ## Understanding the advantages of shrinkage methods
 
@@ -202,12 +190,42 @@ In this task, you will show your understanding of the advantages of Ridge by syn
 
 #### Ridge
 ```{r}
-M1 <- diag(n.dimensions) # REPLACE THIS WITH YOUR CODE
+M1 <- matrix(
+	# runif(n.dimensions^2, min = 0, max = 2),
+	sample(coefs, replace = TRUE, size = n.dimensions^2),
+	nrow = n.dimensions,
+	ncol = n.dimensions,
+)
+M1 <- diag(n.dimensions)
+M1.ur <- sample(100, replace = FALSE, size = 50)
+M1.uc <- sample(100, replace = FALSE, size = 50)
+M1[M1.ur, M1.uc] <- sample(coefs, replace = TRUE, size = 50^2)
+# M1[col(M1) == row(M1)] <- 1
+# M1 <- matrix(
+# 	1,
+# 	nrow = n.dimensions,
+# 	ncol = n.dimensions,
+# )
+# M1.half <- (n.dimensions / 2)
+# M1[, (M1.half + 1):n.dimensions] <- 0
+# M1[1:M1.half, 1:M1.half] <- 0
+# M1[col(M1) == row(M1)] <- 0.05
+# M1[
+# 	col(M1) > M1.half &
+# 		row(M1) > M1.half &
+# 		col(M1) == row(M1)
+# ] <- 1
+# M1[1, 1] <- 1
 
 # KEEP THE CODE BELOW
 noise <- rnorm(n.samples, sd = 8, mean = 0)
 X1 <- X %*% M1
 Y1 <- (X1 %*% coefs) + noise
+
+M1.c <- round(cor(X1), 2) > 0.9
+test.pca <- prcomp(X1)
+
+summary(test.pca)
 ```
 
 Running these test should now make Ridge perform the best.
@@ -230,9 +248,18 @@ It can still be implemented with a few short lines of code, though.
 ```{r}
 M2 <- diag(n.dimensions) # REPLACE THIS WITH YOUR CODE
 
+M2.selection <- sample(n.dimensions, replace = FALSE, size = 80)
+M2.unimportant <- M2.selection
+# M2.unimportant <- M2.selection[26:50]
+
+# M2[,M2.important] <- M2[,M2.important] * 10
+# M2[,M2.unimportant] <- M2[,M2.unimportant] * 0.001
+M2[,M2.unimportant] <- M2[,M2.unimportant] * (1/(coefs[M2.unimportant]*1000))
+
 # KEEP THE CODE BELOW
 noise <- rnorm(n.samples, sd = 8, mean = 0)
 X2 <- X %*% M2
+Y2_wo_noise <- (X2 %*% coefs)
 Y2 <- (X2 %*% coefs) + noise
 ```
 
