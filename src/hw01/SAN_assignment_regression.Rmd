@@ -126,13 +126,29 @@ summary(learnAndTest(X, Y, "lm"))
 
 #### Violate noise normality
 ```{r}
-noise <- runif(n.samples, min = -4, max = 4)
+noise2 <- rbeta(n.samples, 1 / 7, 1 / 7)
+# noise3 <- ((noise2 - mean(noise2))/sd(noise2) * 8)
+noise3 <- ((seq(n.samples) - mean(seq(n.samples))) / sd(seq(n.samples))) * 8
+
+noise2 <- runif(n.samples, min = -8, max = 8)
+noise <- rnorm(n.samples, sd = 8, mean = 0)
+mean(noise3)
+var(noise3)
+plot(noise)
+plot(noise3)
+D3 <- (X %*% coefs) + intercept + noise3
+D1 <- (X %*% coefs) + intercept + noise
+plot(D1)
+plot(D3)
 
 # KEEP THE CODE BELOW
-Y <- (X %*% coefs) + intercept + noise
-summary(learnAndTest(X, Y, "lm"))
+Y <- (X %*% coefs) + intercept + noise3
+# summary(learnAndTest(X, Y, "lm"))
+test_model <- lm(Y ~ X)
+summary(test_model)
+# plot(test_model)
 ```
-**Your comment:** overfit
+**Your comment:** We violated noise normality by replacing the normal distribution with uniform distribution (with the 0 mean and
 
 
 #### Violate linearity
