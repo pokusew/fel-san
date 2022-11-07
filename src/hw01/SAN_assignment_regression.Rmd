@@ -2,7 +2,7 @@
 title: "SAN Assignment - regression"
 author: "Martin Endler <endlemar@fel.cvut.cz>"
 output:
-pdf_document: default
+  pdf_document: default
 ---
 
 ## Submission
