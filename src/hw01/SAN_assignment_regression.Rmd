@@ -126,29 +126,13 @@ summary(learnAndTest(X, Y, "lm"))
 
 #### Violate noise normality
 ```{r}
-noise2 <- rbeta(n.samples, 1 / 7, 1 / 7)
-# noise3 <- ((noise2 - mean(noise2))/sd(noise2) * 8)
-noise3 <- ((seq(n.samples) - mean(seq(n.samples))) / sd(seq(n.samples))) * 8
-
-noise2 <- runif(n.samples, min = -8, max = 8)
-noise <- rnorm(n.samples, sd = 8, mean = 0)
-mean(noise3)
-var(noise3)
-plot(noise)
-plot(noise3)
-D3 <- (X %*% coefs) + intercept + noise3
-D1 <- (X %*% coefs) + intercept + noise
-plot(D1)
-plot(D3)
+noise <- runif(n.samples, min = -8, max = 8)
 
 # KEEP THE CODE BELOW
-Y <- (X %*% coefs) + intercept + noise3
-# summary(learnAndTest(X, Y, "lm"))
-test_model <- lm(Y ~ X)
-summary(test_model)
-# plot(test_model)
+Y <- (X %*% coefs) + intercept + noise
+summary(learnAndTest(X, Y, "lm"))
 ```
-**Your comment:** We violated noise normality by replacing the normal distribution with uniform distribution (with the 0 mean and
+**Your comment:** We violated noise normality by replacing the normal distribution with uniform distribution. Because the model had a relatively large dimension compared to the number of samples, the model started to overfit (nearly-perfect $R^2$, very low RSE) when we replaced the normal-distributed noise with uniform-distributed one.
 
 
 #### Violate linearity
@@ -281,9 +265,7 @@ M2.unimportant_idxs <- M2.selection
 # Note: We know the magnitude of the coefficients in our case, so we can choose correct scaling factor.
 # We can also add the term `* (1/coefs[M2.unimportant_idxs])` (assumming abs(coefs) > 1)
 # to further normalize the scaling factor.
-M2[, M2.unimportant_idxs] <- M2[, M2.unimportant_idxs] *
-	0.001 *
-	(1 / coefs[M2.unimportant_idxs])
+M2[, M2.unimportant_idxs] <- M2[, M2.unimportant_idxs] * 0.001 * (1 / coefs[M2.unimportant_idxs])
 # M2[,M2.unimportant_idxs] <- M2[,M2.unimportant_idxs] * 0.001 # also works great
 
 # KEEP THE CODE BELOW
@@ -294,10 +276,8 @@ Y2 <- (X2 %*% coefs) + noise
 
 Running these test should now make LASSO perform the best.
 ```{r}
-t31 <- learnAndTest(X2, Y2, "lm")
-t32 <- learnAndTest(X2, Y2, "ridge")
-t33 <- learnAndTest(X2, Y2, "lasso")
-t32_c <- as.matrix(predict(t32$finalModel, s = t32$bestTune[1, "fraction"], type = "coef", mode = "fraction")$coefficients)
-t33_c <- as.matrix(predict(t33$finalModel, s = t33$bestTune[1, "fraction"], type = "coef", mode = "fraction")$coefficients)
+print(learnAndTest(X2, Y2, "lm"))
+print(learnAndTest(X2, Y2, "ridge"))
+print(learnAndTest(X2, Y2, "lasso"))
 ```
 **Justification:** Generally, LASSO performs better when the response is a function of only a relatively small number of predictors. We can adjust the data by a linear transformation to make it the case. We create a scaling matrix that scales down a selected subset of features (making them unimportant) which also affects the linear regression coefficients. This in turn pushes LASSO to perform variable selection (forcing some of the coefficient estimates to be exactly equal to zero when lambda is sufficiently large). We ran the tests multiple times for our transformation and in all instances, the LASSO was the best (lowest RMSE, with a difference of around 1).
