@@ -21,6 +21,12 @@ hw01: $(EXPORT_DIR)
 		src/hw01/SAN_assignment_regression.Rmd \
 		src/hw01/SAN_assignment_regression.pdf
 
+.PHONY: hw02
+hw02: $(EXPORT_DIR)
+	$(ZIP) -j $(EXPORT_DIR)/$@-$(HW_SUFFIX)-brute.zip \
+		src/hw02/SAN_assignment_LDA.Rmd \
+		src/hw02/SAN_assignment_LDA.pdf
+
 .PHONY: clean
 clean:
 	rm -rf $(EXPORT_DIR) $(TEMP_DIR)
