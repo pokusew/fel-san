@@ -3,6 +3,7 @@ title: "Linear Discriminant Analysis"
 author: "Martin Endler <endlemar@fel.cvut.cz>"
 output:
   pdf_document: default
+  html_document: default
 ---
 
 #### Introduction
@@ -184,7 +185,8 @@ LDA <- function(mydata, labels) {
 
 	## visual comparison with PCA
 	par(mfrow = c(1, 2))
-	pca <- prcomp(mydata)
+	pca <- prcomp(mydata, scale. = FALSE) # bad
+	# pca <- prcomp(mydata, scale. = TRUE) # good
 	plot(y[, 1], y[, 2], col = labels, pch = 21, lwd = 2, xlab = "LD1", ylab = "LD2", main = "LDA")
 	plot(-pca$x, col = labels, pch = 21, lwd = 2, main = "PCA")
 
@@ -202,6 +204,7 @@ LDA <- function(mydata, labels) {
 # labels <- mydata[,5]
 # mydata <- mydata[,-5]
 
+# already done in Section `##### Load the dataset`
 # mydata <- read.csv("wine.csv", header = FALSE)
 # labels <- mydata[, 1]
 # labels <- as.factor(labels)
@@ -229,3 +232,21 @@ accLDA <- CrossvalidationLDA(mydata, labels, kfolds = 10)
 ```
 
 ##### Discuss given results.
+
+**LDA was able to separate the given data nearly perfectly**. When trained on the whole dataset, only two 2 data points out of 178 were misclassified (i.e., ACC = 0.988764). Cross-validation on 10 random folds also confirmed this nearly-perfect performance of LDA on this dataset (mean ACC = 0.9888889).
+
+Compared to the LDA, **PCA (without scaling)** performed very **bad** which was clearly visible from the plots. The reason for this is that there are big differences in the magnitude of variance between some variables (specifically variable 13 has a variance of several orders of magnitude larger than the rest). And because PCA aims to find directions which maximalize the variance in a data, this variable significantly affects the result.
+However, if we pass `.scale = TRUE` to `prcomp`, the variables will be scaled to have unit variance before the (PCA) analysis takes place. When we performed **PCA with scaling**, we got much better results _(compared to the PCA without scaling)_, but there were still **more misclassifications** than in the LDA.
+
+```r
+# see that variable 13 is significantly affecting PCA without scaling
+# compute the covarinace matrix
+mydata.cov <- cov(mydata)
+# see the variances of all variables (i.e., diagonal of the covarinace matrix)
+print(mydata.cov[col(mydata.cov) == row(mydata.cov)])
+# see the covarinace of variable 13
+print(mydata.cov[13, 13])
+# means are also useful
+mydata.means <- colMeans(mydata)
+print(mydata.means[13])
+```
