@@ -30,8 +30,7 @@ hw02: $(EXPORT_DIR)
 .PHONY: midterm
 midterm: $(EXPORT_DIR)
 	$(ZIP) -j $(EXPORT_DIR)/$@-$(HW_SUFFIX)-brute.zip \
-		src/midterm/SAN_midterm.Rmd \
-		src/midterm/SAN_midterm.pdf
+		src/midterm/midterm.R
 
 .PHONY: clean
 clean:
