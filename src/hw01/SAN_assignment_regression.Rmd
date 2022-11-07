@@ -175,66 +175,27 @@ In this task, you will show your understanding of the advantages of Ridge by syn
 #### Ridge
 ```{r}
 M1 <- diag(n.dimensions)
-# M1 <- diag(x = rnorm(n.dimensions, sd = 0.2), n.dimensions)
-
-# M1.fraction <- 0.1
-M1.selection <- sample(n.dimensions, replace = FALSE, size = 10)
-M1.idxs <- M1.selection
-
-
-#1 <- matrix(
-#	# runif(n.dimensions^2, min = 0, max = 2),
-#	# prob = c(0.7, 0.3)
-#	# sample(c(0, 1, 2, 3, 4, 5), replace = TRUE, size = n.dimensions^2),
-#	1,
-#	nrow = n.dimensions,
-#	ncol = n.dimensions,
-#
-
-# M1[row(M1) == col(M1)] <- 0
-
-#
-# M1.tmp <- sample(c(0, 1), replace = TRUE, size = n.dimensions * length(M1.idxs), prob = c(0.7, 0.3))
-#
-# M1[, M1.idxs] <- 0
-M1[row(M1) == col(M1)][M1.idxs] <- 100
-
-# M1 <- matrix(
-# 	# runif(n.dimensions^2, min = 0, max = 2),
-# 	sample(c(0, 1), replace = TRUE, size = n.dimensions^2, prob = c(0.7, 0.3)),
-# 	nrow = n.dimensions,
-# 	ncol = n.dimensions,
-# )
-# M1 <- diag(n.dimensions)
-# M1.ur <- sample(100, replace = FALSE, size = 50)
-# M1.uc <- sample(100, replace = FALSE, size = 50)
-# M1[M1.ur, M1.uc] <- sample(coefs, replace = TRUE, size = 50^2)
-# M1[col(M1) == row(M1)] <- 1
-# M1 <- matrix(
-# 	1,
-# 	nrow = n.dimensions,
-# 	ncol = n.dimensions,
-# )
-# M1.half <- (n.dimensions / 2)
-# M1[, (M1.half + 1):n.dimensions] <- 0
-# M1[1:M1.half, 1:M1.half] <- 0
-# M1[col(M1) == row(M1)] <- 0.05
-# M1[
-# 	col(M1) > M1.half &
-# 		row(M1) > M1.half &
-# 		col(M1) == row(M1)
-# ] <- 1
-# M1[1, 1] <- 1
+M1.scale_factors <- rlnorm(n.dimensions, meanlog = 1)
+M1.biggest <- sort(M1.scale_factors, index.return = TRUE, decreasing = TRUE)$ix[1:80]
+# M1.fraction <- 0.2
+# M1.selection <- sample(n.dimensions, replace = FALSE, size = round(M1.fraction * n.dimensions))
+# M1.idxs <- M1.selection
+M1.idxs <- M1.biggest
+# M1[M1.idxs, ] <- sample(c(0, 1, 2, 3), replace = TRUE, size = length(M1[, M1.idxs]))
+M1[M1.idxs, ] <- rlnorm(length(M1[M1.idxs, ]), meanlog = 1)
+M1[, M1.idxs] <- 0
+M1[col(M1) == row(M1)] <- M1.scale_factors
 
 # KEEP THE CODE BELOW
 noise <- rnorm(n.samples, sd = 8, mean = 0)
 X1 <- X %*% M1
 Y1 <- (X1 %*% coefs) + noise
 
-M1.c <- round(cor(X1), 2) > 0.9
-test.pca <- prcomp(X1)
-
-summary(test.pca)
+# my additional test code
+X1.cov <- cov(X1)
+X1.cor <- round(cor(X1), 2) > 0.9
+X1.pca <- prcomp(X1, scale. = TRUE)
+summary(X1.pca)
 ```
 
 Running these test should now make Ridge perform the best.
