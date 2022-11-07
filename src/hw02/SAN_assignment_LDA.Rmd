@@ -1,7 +1,8 @@
 ---
 title: "Linear Discriminant Analysis"
 author: "Martin Endler <endlemar@fel.cvut.cz>"
-output: html_document
+output:
+  pdf_document: default
 ---
 
 #### Introduction
@@ -14,8 +15,11 @@ In this tutorial, we will work with a dataset that classifies wines (samples) in
 #### Linear Discriminant Analysis
 As we mentioned above, LDA finds directions where classes are well-separated, i.e. LDA maximizes the ratio of between-class variance and the within-class variance. Firstly, assume that $C$ is a set of classes and set $D$, which represents a training dataset, is defined as $D = \{x_1, x_2, . . . , x_N \}$.
 
-The between-classes scatter matrix SB is defined as:
-$S_b = \sum_c N_C(\mu_c -\overline{x})(\mu_c - \overline{x})^T$, where $\overline{x}$ is a vector represents the overall mean of the data, µ represents the mean corresponding to each class, and $N_C$ are sizes of the respective classes.
+The between-classes scatter matrix $S_B$ is defined as:
+
+$S_B = \sum_c N_C(\mu_c -\overline{x})(\mu_c - \overline{x})^T$,
+
+where $\overline{x}$ is a vector represents the overall mean of the data, $\mu_c$ represents the mean corresponding to each class, and $N_C$ are sizes of the respective classes.
 
 The within-classes scatter matrix $S_W$ is defined as:
 
@@ -25,19 +29,21 @@ Next, we will solve the generalized eigenvalue problem for the matrix $S_W^{-1}S
 
 $(S_W^{-1}S_B)w = \lambda w$
 
-where $w$ represents an eigenvector and $\lambda$ represents an eigenvalue. Finally, choose k eigenvectors with the largest eigenvalue and transform the samples onto the new subspace.
+where $w$ represents an eigenvector and $\lambda$ represents an eigenvalue. Finally, choose $k$ eigenvectors with the largest eigenvalue and transform the samples onto the new subspace.
 
 #### Step by step
 
 ##### Load the dataset
 ```{r}
-# ADD YOUR CODE
+mydata <- read.csv("wine.csv", header = FALSE)
+labels <- mydata[, 1]
+labels <- as.factor(labels)
+mydata <- mydata[, -1]
 ```
 
 ##### Compute the within-scatter matrix
 ```{r}
-ComputeWithinScatter <- function(data, n)
-{
+ComputeWithinScatter <- function(data, n) {
 	# ADD YOUR CODE
 	return(withinMatrix)
 }
@@ -45,8 +51,7 @@ ComputeWithinScatter <- function(data, n)
 
 ##### Compute the between-scatter matrix
 ```{r}
-ComputeBetweenScatter <- function(data, n, meanOverall)
-{
+ComputeBetweenScatter <- function(data, n, meanOverall) {
 	# ADD YOUR CODE
 	return(betweenMatrix)
 }
@@ -55,8 +60,7 @@ ComputeBetweenScatter <- function(data, n, meanOverall)
 
 ##### Solve the EigenProblem and return eigen-vector
 ```{r}
-SolveEigenProblem <- function(withinMatrix, betweenMatrix, prior)
-{
+SolveEigenProblem <- function(withinMatrix, betweenMatrix, prior) {
 	# ADD YOUR CODE
 	return(eivectors)
 }
@@ -137,11 +141,10 @@ LDA <- function(mydata, labels) {
 	splittedData <- split(mydata, labels)
 
 	# 2) scatter matrices
-	#############  within-class scatter matrix Sw ##################
-	withinScatterMatrix <- ComputeWithinScatter(?) # TODO
-
-	#############  between-class scatter matrix Sb ##################
-	betweenScatterMatrix <- ComputeBetweenScatter(?) # TODO
+	#############  within-class scatter matrix S_W ##################
+	withinScatterMatrix <- ComputeWithinScatter(data = splittedData, n = n)
+	#############  between-class scatter matrix S_B ##################
+	betweenScatterMatrix <- ComputeBetweenScatter(data = splittedData, n = n, meanOverall = 0) # TODO
 
 	# 3)  eigen problem
 	############ solve Eigen problem ################################
@@ -151,7 +154,7 @@ LDA <- function(mydata, labels) {
 	y <- (as.matrix(mydata) %*% ei$vectors[, 1:2])
 
 	## visual comparison with PCA
-	par(mfrow=c(1, 2))
+	par(mfrow = c(1, 2))
 	pca <- prcomp(mydata)
 	plot(y[, 1], y[, 2], col = labels, pch = 21, lwd = 2, xlab = "LD1", ylab = "LD2", main = "LDA")
 	plot(-pca$x, col = labels, pch = 21, lwd = 2, main = "PCA")
@@ -165,28 +168,34 @@ LDA <- function(mydata, labels) {
 ############################# MAIN ##########################################
 
 ### PREPARE DATA
-#data(iris)
-#mydata <- iris
-#labels <- mydata[,5]
-#mydata <- mydata[,-5]
+# data(iris)
+# mydata <- iris
+# labels <- mydata[,5]
+# mydata <- mydata[,-5]
 
-mydata <- read.csv("wine.csv", header = FALSE)
-labels <- mydata[, 1]
-labels <- as.factor(labels)
-mydata <- mydata[, -1]
+# mydata <- read.csv("wine.csv", header = FALSE)
+# labels <- mydata[, 1]
+# labels <- as.factor(labels)
+# mydata <- mydata[, -1]
 
-#compute LDA and return corresponding eigenvectors
+# compute LDA and return corresponding eigenvectors
 eigenLDA <- LDA(mydata, labels)
-#find centroids in the transformed data
-centroids <- ComputeCentroids(as.matrix(mydata) %*% eigenLDA[, 1:(length(levels(labels))-1)],
-labels = labels)
-#make predictions on the "mydata"
-prediction <- Classify(newData = mydata, labels = labels, eigenVectors = eigenLDA,
-centroids = centroids)
-#ACC
-sum(prediction == labels)/(length(labels))
+# find centroids in the transformed data
+centroids <- ComputeCentroids(
+	as.matrix(mydata) %*% eigenLDA[, 1:(length(levels(labels)) - 1)],
+	labels = labels
+)
+# make predictions on the "mydata"
+prediction <- Classify(
+	newData = mydata,
+	labels = labels,
+	eigenVectors = eigenLDA,
+	centroids = centroids
+)
+# ACC
+sum(prediction == labels) / (length(labels))
 
-#CrossValidation
+# CrossValidation
 accLDA <- CrossvalidationLDA(mydata, labels, kfolds = 10)
 ```
 
