@@ -27,6 +27,12 @@ hw02: $(EXPORT_DIR)
 		src/hw02/SAN_assignment_LDA.Rmd \
 		src/hw02/SAN_assignment_LDA.pdf
 
+.PHONY: midterm
+midterm: $(EXPORT_DIR)
+	$(ZIP) -j $(EXPORT_DIR)/$@-$(HW_SUFFIX)-brute.zip \
+		src/midterm/SAN_midterm.Rmd \
+		src/midterm/SAN_midterm.pdf
+
 .PHONY: clean
 clean:
 	rm -rf $(EXPORT_DIR) $(TEMP_DIR)
