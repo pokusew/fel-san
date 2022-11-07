@@ -98,7 +98,7 @@ print(learnAndTest(X, Y, "glmnet", tuneGrid = lambda_lasso))
 
   * What change in the learned model would you anticipate if we changed the `mean` parameter value to a different constant in the noise generation? You may answer this either by talking about the coefficients or by giving a geometrical interpretation. **Answer:** From a geometric point of view, the predicted y values would be shifted up (for a positive mean), resp. down (for a negative mean). This shift would correspond to a change in the estimated intercept parameter. The other estimated coefficients would remain the same.
   * In our example we generated samples (i.e. the independent variables `X`) from uniform distribution. The least squares  method, on the other hand, has something called the "normality assumption". Have we violated that assumption? Justify. **Answer:** No, we haven't. The "normality assumption" requires that the residuals are normally distributed, not the data (our generated samples).
-  * Which method gave the best results? Is it the most common one to do so if you re-run the test several times? Why do you think it performs better the best? **Answer:** The LASSO gave the best result (smallest RMSE) most often while re-running the test multiple times. However, the plain Least squares method was also very good, with a small RMSE very close to the one from LASSO. From the very small lambda parameter in the best LASSO, we can see that the LASSO is almost the same as the Least squares method (the shrinkage penalty term is close to zero). This could mean that the Least squares method is not overfitting on our data.
+  * Which method gave the best results? Is it the most common one to do so if you re-run the test several times? Why do you think it performs better the best? **Answer:** The LASSO gave the best result (smallest RMSE) most often while re-running the test multiple times. However, the ordinary Least squares method was also very good, with a small RMSE very close to the one from LASSO. From the very small lambda parameter in the best LASSO, we can see that the LASSO is almost the same as the Least squares method (the shrinkage penalty term is close to zero). This could mean that the Least squares method is not overfitting on our data.
   * Check the selected values for the lambda parameter for ridge and LASSO. Are they low or high? How does it relate to the above answer? **Answer:** They are both very low. That means that both ridge and LASSO are almost the same as the Least squares method (the shrinkage penalty term is close to zero).
 
 ## Least squares assumptions
@@ -243,7 +243,7 @@ print(learnAndTest(X1, Y1, "lm"))
 print(learnAndTest(X1, Y1, "ridge"))
 print(learnAndTest(X1, Y1, "lasso"))
 ```
-**Justification:** Ridge works better than OLS and LASSO when there is multicollinearity in the features.
+**Justification:** Ridge works better than OLS when there is multicollinearity in the features.
 
 
 #### LASSO (OPTIONAL CHALLENGE)
