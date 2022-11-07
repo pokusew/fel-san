@@ -25,6 +25,7 @@ hw01: $(EXPORT_DIR)
 hw02: $(EXPORT_DIR)
 	$(ZIP) -j $(EXPORT_DIR)/$@-$(HW_SUFFIX)-brute.zip \
 		src/hw02/SAN_assignment_LDA.Rmd \
+		src/hw02/SAN_assignment_LDA.html \
 		src/hw02/SAN_assignment_LDA.pdf
 
 .PHONY: midterm
