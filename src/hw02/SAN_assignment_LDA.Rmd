@@ -81,8 +81,8 @@ ComputeBetweenScatter <- function(data, num_variables, mean_overall) {
 
 ##### Solve the EigenProblem and return eigen-vector
 ```{r}
-SolveEigenProblem <- function(withinMatrix, betweenMatrix, prior) {
-	# ADD YOUR CODE
+SolveEigenProblem <- function(withinMatrix, betweenMatrix) {
+	eivectors <- eigen(solve(withinMatrix) %*% betweenMatrix)
 	return(eivectors)
 }
 ```
