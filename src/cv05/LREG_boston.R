@@ -10,105 +10,130 @@ library(tidyverse)
 ## use Boston data set available in MASS to predict median house value in neighborhoods around Boston
 help(Boston) # learn the structure of the dataset, 506 areas described by 14 variables, medv will serve as the target variable
 
-# Look at relationship between lstat (the percent of households with low socioeconomic status in the neighborhood)
+# Plot the relationship between lstat (the percent of low socioeconomic households)
 # and medv (median value of homes in $1000.)
 Boston %>%
   ggplot(aes(x = lstat, y = medv)) +
   geom_point()
 
 ## Simple linear regression
-## Start with a basic regression using the lm(y ~ x, data) function
-lm.fit <- lm(medv ~ lstat, data = Boston)
+lm_fit <- lm(medv ~ lstat, data = Boston)
 
-# visualize the relationship between indep and dep variable
+# visualize the relationship between the independent and the dependent variable
 Boston %>%
   ggplot(aes(x = lstat, y = medv)) +
   geom_point() +
   # visualize the fit
-  geom_abline(slope = lm.fit$coefficients["lstat"],
-              intercept = lm.fit$coefficients["(Intercept)"],
-              size = 1, col = 'red') +
-  ggtitle("Relationship between lower status popuation and house prices")
+  geom_abline(slope = lm_fit$coefficients["lstat"],
+              intercept = lm_fit$coefficients["(Intercept)"],
+              size = 1, col = "red") +
+  ggtitle("Relationship between lower status population and house prices")
 
-summary(lm.fit) # see the model
+summary(lm_fit) # show extensive metrics about the model
 
-names(lm.fit) # get all component names of the lm model
-coef(lm.fit) # see the coefficients once more, same as lm.fit$coefficients
-confint(lm.fit) # confidence intervals around these estimates
+# ----------------------------------------- END OF THE 3rd LAB ----------------------------------------------
+###################################
+## Diagnosing a regression model ##
+###################################
+names(lm_fit)   # get all component names of the lm model
+confint(lm_fit) # confidence intervals around the coefficient estimates
 
-# predict for three new neighborhoods including confints
-predict(lm.fit,
-        data.frame(lstat = c(5, 10, 15)),
-        interval = "confidence")
-
+# see the diagnostic plots. The first command arranges the plots into a 2x2 grid
 par(mfrow = c(2, 2))
-plot(lm.fit) # see the diagnostic plots
-
-plot(hatvalues(lm.fit)) # Leverage statistics can be computed for our predictors with hatvalues()
-which.max(hatvalues(lm.fit)) # find the observation with the largest leverage
+plot(lm_fit)
 
 ## Summary
 # There is an obvious relationship between the independent variable (household status) and the dependent variable (median house value).
 # Both the F-stat for the whole model and t-stat for the predictor are significant, the predictor helps to explain more than 50% of the variance in the target variable.
 # The median house price is around $34500, on average it decreases by $950 with one percent increase of households with low socioeconomical status.
-# For more than 30% it virtually becomes $0 (the model does not extrapolate well for these unobserved values).
-# Both simple plot and residual plot suggest that the relationship is rather non-linear.
+# For lstat > 30%, the price virtually becomes $0 (the model does not extrapolate well for these unobserved values).
+# Both the data plot and the residual plot suggest that the relationship is rather non-linear.
 # Consequences: prediction could be improved with additional non-linear terms, assumptions are violated, estimations do not have to be perfect (namely p-values, confidence intervals).
 
-nlm.fit <- lm(medv ~ poly(lstat, 2), data = Boston) # just see the improvement with the most simple polynomial regression
-summary(nlm.fit) # explains around 10% variance more
-plot(nlm.fit) # residual plot looks much better (still not normal error distribution)
-anova(lm.fit, nlm.fit) # the second model is significantly better, sum of sq is positive, p-value small
+##################################
+## Polynomial linear regression ##
+##################################
+# Fit a degree 2 polynomial
+nlm_fit <- lm(medv ~ poly(lstat, 2), data = Boston)
+
+# Did we improve our model? Compare with the summary of lm_fit
+summary(nlm_fit)
+
+# Examine the new diagnostic plots. Which undesirable symptoms vanished? Which are still present?
+plot(nlm_fit)
+
+# Test, whether the second model is significantly better
+anova(lm_fit, nlm_fit)
 # We will look at ANOVA in next labs, but the concept is not new - it's an F-test that compares 2 models via their R2 scores
 
-## Multiple linear regression
-# Use multiple/all/relevant predictors at once, in a single model the available independent variables
-lm.fit.all <- lm(medv ~ ., data = Boston)
 
-summary(lm.fit.all) # model improves again, only some of the variables seem to be unimportant, we may want to exclude them
+################################
+## Multiple linear regression ##
+################################
+# Use multiple/all/relevant predictors in a single model
+lm_fit_all <- lm(medv ~ ., data = Boston)
 
-lm.fit.exclude <- lm(medv ~ . - age - indus, data = Boston) # truly exclude age and indus
-summary(lm.fit.exclude) # the simpler model seems to maintain the performance of the previous model
-anova(lm.fit.all, lm.fit.exclude) # no difference, the simpler model pref
+summary(lm_fit_all) # model improves again, only some of the variables seem to be unimportant, we may want to exclude them
+
+lm_fit_exclude <- lm(medv ~ . - age - indus, data = Boston) #  exclude age and indus
+summary(lm_fit_exclude) # the simpler model seems to maintain the performance of the previous model
+anova(lm_fit_all, lm_fit_exclude) # no difference, the simpler model pref
 
 ## Finally, try some feature selection methods
-step <- stepAIC(lm.fit.all, direction = "both") # stepwise regression, based on AIC criterion, taken from MASS library
+step <- stepAIC(lm_fit_all, direction = "both") # stepwise regression, based on AIC criterion
 step$anova # display results, actually does the same as we did manually, removes age and indus
 
-# Fit LASSO to remove unimportant predictors
-library("glmnet") # lasso
+################################################
+## Shrinkage (or also Regularization) methods ##
+################################################
+library("glmnet") # enables LASSO and ridge
 
-lambda_grid <- 10^seq(10, -3, length = 200)
+# Fit LASSO to remove unimportant predictors.
+# First, create a vector of shrinkage parameters (lambda) to try
+lambda_grid <- 10^seq(2, -2, length = 100)
+
+# Extract the independent variables (the X matrix) for fitting purposes
 BostonX <- Boston %>% dplyr::select(-medv) %>% as.matrix()
 
-lasso.model <- glmnet(x = BostonX,
-                      y = Boston$medv,
-                      alpha = 1,
-                      lambda = lambda_grid,
-                      standardize = TRUE)
-plot(lasso.model, "lambda", label = TRUE) # See regularization in action
+lasso_model <- glmnet(
+  x = BostonX,
+  y = Boston$medv,
+  alpha = 1,
+  lambda = lambda_grid,
+  standardize = TRUE
+)
 
-# Lambda controls RMSE-shrinkage trade-off. Determine its 'optimal' value
-lasso.cv.out <- cv.glmnet(x = BostonX,
-                          y = Boston$medv,
-                          alpha = 1)
+# Look at this graph. What do you think it's showing?
+plot(lasso_model, "lambda", label = TRUE)
+
+# CV (cross validation) measures the performance of models associated with each lambda value
+# Recall, that lambda controls the RMSE-vs-shrinkage trade-off.
+lasso_cv_out <- cv.glmnet(
+  x = BostonX,
+  y = Boston$medv,
+  alpha = 1
+)
 # Plot lambda vs. RMSE
-plot(lasso.cv.out)
-lasso.lambda <- lasso.cv.out$lambda.min
-
-# Obtain coefficients corresponding to given lambda
-lasso.coefficients <- predict(lasso.model, type = "coefficients", s = lasso.lambda)
+plot(lasso_cv_out)
+# Determine the 'optimal' lambda value
+lasso_lambda <- lasso_cv_out$lambda.min
+# Obtain the regression coefficients given by the optimal lambda
+lasso_coefficients <- predict(lasso_model, type = "coefficients", s = lasso_lambda)
 
 # Display the coefficients and selected variables
 print("LASSO coefficients:")
-print(lasso.coefficients) # the absolute coefficient values influenced by the scale of the individual variables, nox has a small scale
-print(as.matrix(lasso.coefficients)[seq(2, length(Boston) - 1),] != 0)
+# The absolute coefficient values influenced by the scale of the individual variables (e.g. nox has a small scale)
+print(lasso_coefficients)
+print(as.matrix(lasso_coefficients)[seq(2, length(Boston) - 1),] != 0)
 
-## Questions
-# 1. What procedure is used to choose lambda?
-# 2. Compare lasso.cv.out$lambda.min and lasso.cv.out$lambda.1se - find them in the plot(lasso.cv.out). Which one do you prefer and why?
-# 3. How lasso differs from ridge and how would you perform ridge regression? (hint: look at what parameters were used in the glmnet function)
+## Questions for a bonus point:
+# 1. What procedure is used to find the lambda?
+# 2. Apart from lasso_cv_out$lambda.min there is another option for picking the lambda parameter - lasso_cv_out$lambda.1se
+#      Compare their values and find them in the plot(lasso_cv_out).
+#      How choosing the other lambda affects the model in terms of accuracy and complexity?
+# 3. How LASSO differs from ridge and how would you perform ridge regression? (hint: look at what parameters were used in the glmnet function)
 
 ## Summary
 # To avoid overfitting and increase simplicity and understandability of the model, only relevant features should be used.
-# We have shown three different approaches to feature selection: p-values, stepwise regression and lasso. All of them came to the same conclusion: two features should be removed from the model.
+# We have shown three different approaches to feature selection: p-values, stepwise regression and LASSO.
+# All of them came to the same conclusion: two features should be removed from the model.

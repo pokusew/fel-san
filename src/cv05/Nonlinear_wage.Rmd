@@ -40,7 +40,7 @@ summary(Wage) # learn the structure of the dataset
 data <- data.frame(age = age,
                    wage = wage,
                    education = education)
- 
+
 # plots you are familiar with from the lecture
 data %>% ggplot(aes(x=age, y=wage)) +
   geom_point(color='darkgrey')
@@ -59,11 +59,11 @@ fit <- lm(wage ~ poly(age, 4), data=Wage)
 coef(summary(fit)) # show the model coeffs
 
 # learn the 4th degree polynomial age model with raw polynomials
-fit2 <- lm(wage ~ poly(age, 4, raw=T), data=Wage) 
+fit2 <- lm(wage ~ poly(age, 4, raw=T), data=Wage)
 coef(summary(fit2)) # the coeffs and p-values change, later we will see it does not affect the fitted values
 
 # explicitly calculate the exponential terms, store them into a data.frame
-fit2b <- lm(wage ~ cbind(age, age^2, age^3, age^4), data=Wage) 
+fit2b <- lm(wage ~ cbind(age, age^2, age^3, age^4), data=Wage)
 coef(fit2b) # no change from fit2
 
 # Question:
@@ -72,13 +72,13 @@ coef(fit2b) # no change from fit2
 
 ```{r}
 agelims <- range(age)
-# compare all the models created above 
+# compare all the models created above
 # the following sequence of ages will be used to draw regression lines
-age_grid <- seq(from=agelims[1], 
+age_grid <- seq(from=agelims[1],
                 to=agelims[2])
 
 # use the orthogonal polynomial model first to predict
-preds <- predict(fit, newdata=list(age=age_grid), se=TRUE) 
+preds <- predict(fit, newdata=list(age=age_grid), se=TRUE)
 
 plot_data <- data.frame(age = age_grid,
                         wage = preds$fit,
@@ -89,7 +89,7 @@ plot_data <- data.frame(age = age_grid,
 plotRegression(plot_data, my_col = 'blue', my_title = 'Degree-4 Polynomial (orthogonal)')
 
 # compare with the second fit (we have already found out that 2b and 2c must be identical)
-preds2 <- predict(fit2, newdata=list(age=age_grid), se=TRUE) 
+preds2 <- predict(fit2, newdata=list(age=age_grid), se=TRUE)
 
 # predict using raw polynomials
 plot_data <- data.frame(age = age_grid,
@@ -101,7 +101,7 @@ plot_data <- data.frame(age = age_grid,
 plotRegression(plot_data, my_col = 'blue',  my_title = 'Degree-4 Polynomial 2 (raw)')
 
 # The plots look similar and indeed, there is virtually no difference in predictions
-max(abs(preds$fit - preds2$fit)) 
+max(abs(preds$fit - preds2$fit))
 ```
 Now, we will employ hypothesis testing to decide the optimal degree of the polynomial. We will fit models ranging from linear to a degree-5 polynomial and seek to determine the simplest model that cannot be overcome with a higher degree model.
 
@@ -133,10 +133,10 @@ fit.categ3 <- lm(wage ~ education + poly(age,3), data=Wage)
 anova(fit.categ.1, fit.categ.2, fit.3)
 
 # How does 'categorical' regression looks like?
-Wage %>% 
-   mutate(pred=predict(fit.categ)) %>% 
-   ggplot(aes(x=age, y=wage, col=education)) + 
-   geom_point() + 
+Wage %>%
+   mutate(pred=predict(fit.categ)) %>%
+   ggplot(aes(x=age, y=wage, col=education)) +
+   geom_point() +
    geom_line(aes(y=pred), size=1.1) + theme_minimal()
 
 # Question:
@@ -169,7 +169,7 @@ The intercept corresponds to the average wage in the leftmost bin. The other coe
 
 ## Splines
 
-Let us model the relationship between age and wage with regression splines. The bs() function generates the entire matrix of basis functions for splines with the predefined set of knots. By default, cubic splines are produced. Here, we will specify knots at ages 25, 40 and 60. This produces a spline with 6 basis functions and 7 degrees of freedom (an intercept + 6 splines). Eventually, a natural spline with 4 degrees of freedom is added. Notice its smaller variance at the outer range of the age predictor. 
+Let us model the relationship between age and wage with regression splines. The bs() function generates the entire matrix of basis functions for splines with the predefined set of knots. By default, cubic splines are produced. Here, we will specify knots at ages 25, 40 and 60. This produces a spline with 6 basis functions and 7 degrees of freedom (an intercept + 6 splines). Eventually, a natural spline with 4 degrees of freedom is added. Notice its smaller variance at the outer range of the age predictor.
 
 
 ```{r}
@@ -178,28 +178,28 @@ Let us model the relationship between age and wage with regression splines. The 
 ###########
 
 # -----------------
-# 1. CUBIC SPLINES 
+# 1. CUBIC SPLINES
 #------------------
 # fit the (cubic) regression spline model
-fit <- lm(wage ~ bs(age, knots=c(25, 40, 60)), data=Wage) 
+fit <- lm(wage ~ bs(age, knots=c(25, 40, 60)), data=Wage)
 # make predictions on the same regular age grid we used for polynomial models
 pred <- predict(fit, newdata=list(age=age_grid), se=T)
 
 # ggplot offers an elegant way to embed regression lines directly to the plot
 data %>% ggplot(aes(x=age, y=wage)) +
   geom_point(color='grey') +
-  geom_smooth(method="lm", 
+  geom_smooth(method="lm",
               formula=y ~ bs(x, knots=c(25, 40, 60)))
 
 #---------------------------------------
-# 1.a EXPLORE KNOT PLACEMENTS OF SPLINES 
+# 1.a EXPLORE KNOT PLACEMENTS OF SPLINES
 #---------------------------------------
 dim(bs(age, knots=c(25, 40, 60))) # 6 splines produced
 dim(bs(age, df=6)) # alternative definition, 6 splines again. knots at uniform quantiles of age
 attr(bs(age, df=6), "knots") # show the knots, taken at uniform quantiles (25th, 50th, 75th), their number derived from df
 
 #--------------------
-# 2. NATURAL SPLINES 
+# 2. NATURAL SPLINES
 #--------------------
 # make predictions using natural cubic spline of degree 4
 fit2 <- lm(wage ~ ns(age, df=4), data=Wage)
@@ -208,10 +208,10 @@ pred2 <- predict(fit2, newdata=list(age=age_grid), se=T)
 # Directly compare the cubic spline and the natural spline models
 data %>% ggplot(aes(x=age, y=wage)) +
   geom_point(color='grey') +
-  geom_smooth(method = "lm", 
+  geom_smooth(method = "lm",
               formula= y ~ ns(x, df=4),
               aes(colour="Natural cubic spline"), fill='blue1') +
-  geom_smooth(method = "lm", 
+  geom_smooth(method = "lm",
               formula= y ~ bs(x, knots=c(25, 40, 60)),
               aes(colour="Cubic spline"), fill='red1') +
   scale_colour_manual(name="legend", values=c("red", "blue"))
@@ -224,33 +224,33 @@ Here we fit other spline types. A smoothing spline is derived first. Then, we ap
 # SMOOTHING SPLINES  #
 ######################
 # a user pre-defined dfs
-fit <- smooth.spline(age, wage, df=16) 
+fit <- smooth.spline(age, wage, df=16)
 # the optimal df number found with CV
-fit2 <- smooth.spline(age, wage, cv=TRUE) 
+fit2 <- smooth.spline(age, wage, cv=TRUE)
 print(fit2$df) # the number of dfs found with CV
 
 data %>% ggplot(aes(x = age, y=wage)) +
   geom_point(col="grey") +
-  geom_line(aes(y=fit$fitted, color='16 DF'), size=1) + 
-  geom_line(aes(y=fit2$fitted, color='6.8 DF'), size=1) + 
+  geom_line(aes(y=fit$fitted, color='16 DF'), size=1) +
+  geom_line(aes(y=fit2$fitted, color='6.8 DF'), size=1) +
   ggtitle("Smoothing Spline") +
-  scale_color_manual(name = "Degrees of freedom", 
+  scale_color_manual(name = "Degrees of freedom",
                      values = c("16 DF" = "darkblue", "6.8 DF" = "red"))
 
 ####################
 # LOCAL REGRESSION #
 ####################
 # local regression where each neighborhood consists of 20% of the observations
-fit <- loess(wage ~ age, span=.2, data=Wage) 
+fit <- loess(wage ~ age, span=.2, data=Wage)
 # local regression where each neighborhood consists of 50% of the observations
-fit2 <- loess(wage ~ age, span=.5, data=Wage) 
+fit2 <- loess(wage ~ age, span=.5, data=Wage)
 
 data %>% ggplot(aes(x = age, y=wage)) +
   geom_point(col="grey") +
-  geom_line(aes(y=fit$fitted, color='0.2'), size=1) + 
-  geom_line(aes(y=fit2$fitted, color='0.5'), size=1) + 
+  geom_line(aes(y=fit$fitted, color='0.2'), size=1) +
+  geom_line(aes(y=fit2$fitted, color='0.5'), size=1) +
   ggtitle("Local regression") +
-  scale_color_manual(name = "Span", 
+  scale_color_manual(name = "Span",
                      values = c("0.2" = "darkblue", "0.5" = "red"))
 ```
 
@@ -268,7 +268,7 @@ plot.Gam(gam1, col="red") # do the same plot for the natural spline model
 gam.m1 <- gam(wage ~ s(age, 5) + education, data=Wage)       # try various year treatments, this is the model that ignores year
 gam.m2 <- gam(wage ~ year + s(age, 5) + education,data=Wage) # try various year treatments, this is the model that uses a linear function of year
 anova(gam.m1, gam.m2, gam.m3, test="F") # compare the models, the linear year model works the best, m2 is preferred
-summary(gam.m3) # a summary of the gam fit, p-values for year and age correspond to a H0 of a linear relationship versus Ha of a non-linear relationship, a linear function is sufficient for year, however, a non-linear term is required for age 
+summary(gam.m3) # a summary of the gam fit, p-values for year and age correspond to a H0 of a linear relationship versus Ha of a non-linear relationship, a linear function is sufficient for year, however, a non-linear term is required for age
 preds <- predict(gam.m2, newdata=Wage) # make prediction from gam object
 
 gam.lo <- gam(wage ~ s(year, df=4) + lo(age, span=0.7) + education, data=Wage) # learn a gam with local regression building blocks
@@ -285,7 +285,7 @@ How would you decide the previous questions with cross-validation?
 
 ## A task to solve independently
 
-Let us work with a noisy trigonometric function. It is obvious that it is non linear. Explain how far the linear model works and propose a suitable alternative model. 
+Let us work with a noisy trigonometric function. It is obvious that it is non linear. Explain how far the linear model works and propose a suitable alternative model.
 
 ```{r}
 x <- seq(0, pi * 2, 0.1)
@@ -354,4 +354,4 @@ The overfitted spline model: `r myRMSE(sin(x.pred),predict(gam.overfit,data.fram
 
 The smoothing spline model: `r myRMSE(sin(x.pred),predict(gam.smooth,data.frame(x.pred)))`
 
-The irreducible error: `r myRMSE(sin(sin.data$x),sin.data$y)`. It cannot be directly compared with the errors above as it is computed from the noisy data while the above errors compare with the true sin function. 
+The irreducible error: `r myRMSE(sin(sin.data$x),sin.data$y)`. It cannot be directly compared with the errors above as it is computed from the noisy data while the above errors compare with the true sin function.
