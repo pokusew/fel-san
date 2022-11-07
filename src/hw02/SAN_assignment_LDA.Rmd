@@ -43,17 +43,38 @@ mydata <- mydata[, -1]
 
 ##### Compute the within-scatter matrix
 ```{r}
-ComputeWithinScatter <- function(data, n) {
-	# ADD YOUR CODE
-	return(withinMatrix)
+ComputeWithinScatter <- function(data, num_variables) {
+
+	S_W <- matrix(0, nrow = num_variables, ncol = num_variables)
+
+	for (class in seq_along(data)) {
+		D_c <- as.matrix(data[[class]])
+		mean_c <- colMeans(D_c)
+		D_c_minus_mean <- sweep(D_c, 2, mean_c)
+		S_W_c <- t(D_c_minus_mean) %*% D_c_minus_mean
+		S_W <- S_W + S_W_c
+	}
+
+	return(S_W)
 }
 ```
 
 ##### Compute the between-scatter matrix
 ```{r}
-ComputeBetweenScatter <- function(data, n, meanOverall) {
-	# ADD YOUR CODE
-	return(betweenMatrix)
+ComputeBetweenScatter <- function(data, num_variables, mean_overall) {
+
+	S_B <- matrix(0, nrow = num_variables, ncol = num_variables)
+
+	for (class in seq_along(data)) {
+		D_c <- as.matrix(data[[class]])
+		N_c <- dim(D_c)[1]
+		mean_c <- colMeans(D_c)
+		mean_c_minus_overall <- mean_c - mean_overall
+		S_B_c <- mean_c_minus_overall %*% t(mean_c_minus_overall)
+		S_B <- S_B + (N_c * S_B_c)
+	}
+
+	return(S_B)
 }
 ```
 
@@ -136,15 +157,23 @@ LDA <- function(mydata, labels) {
 
 	# number of classes
 	n <- length(levels(labels))
+	num_variables <- dim(mydata)[2]
 
 	# 1) split the data w.r.t. given factors
 	splittedData <- split(mydata, labels)
 
 	# 2) scatter matrices
 	#############  within-class scatter matrix S_W ##################
-	withinScatterMatrix <- ComputeWithinScatter(data = splittedData, n = n)
+	withinScatterMatrix <- ComputeWithinScatter(
+		data = splittedData,
+		num_variables = num_variables
+	)
 	#############  between-class scatter matrix S_B ##################
-	betweenScatterMatrix <- ComputeBetweenScatter(data = splittedData, n = n, meanOverall = 0) # TODO
+	betweenScatterMatrix <- ComputeBetweenScatter(
+		data = splittedData,
+		num_variables = num_variables,
+		mean_overall = colMeans(mydata)
+	)
 
 	# 3)  eigen problem
 	############ solve Eigen problem ################################
