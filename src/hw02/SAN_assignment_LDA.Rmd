@@ -1,6 +1,6 @@
 ---
 title: "Linear Discriminant Analysis"
-author: "your name"
+author: "Martin Endler <endlemar@fel.cvut.cz>"
 output: html_document
 ---
 
