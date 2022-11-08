@@ -1,6 +1,6 @@
 ---
 title: "Generalized Linear Models"
-author: "your name"
+author: "Martin Endler <endlemar@fel.cvut.cz>"
 output: html_document
 ---
 
