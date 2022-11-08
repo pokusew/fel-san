@@ -1,0 +1,98 @@
+---
+title: "Generalized Linear Models"
+author: "your name"
+output: html_document
+---
+
+#### Introduction
+The aim of this assignment is to practice constructing linear models. You will start with a simple linear model. You will evaluate and interpret it (1p). Consequently, your task will be to improve this model using generalized linear models (GLMs) and feature transformations. You will get 1p for proposal and evaluation of GLM (family, evaluation, interpretation), 1p for correct feature transformations, 1p for proposal and justification of the final model and eventually, 1p for comprehensive evaluation of all the model improvements (ablation study through cross-validation, note that the previous evaluations must be done without cross-validation).
+
+#### Input data 
+In this assignment, you will work with a student dataset. The dataset contains 200 samples and 4 features: *num_awards* is the outcome variable and indicates the number of awards earned by students in a year, *math* is a continuous predictor variable and represents students’ scores on their math final exam, *prog* is a categorical predictor variable with three levels indicating the type of program in which the students were enrolled (1 = “General”, 2 = “Academic” and 3 = “Vocational”), and *work* is a continuous predictor that gives the number of hours that students spent at work on average per week.
+
+#### Load the necessary libraries and the dataset
+```{r}
+library(dplyr)
+library(caret) # comprehensive model evaluation
+library(splines)
+library(ggplot2) # visualizations
+library(rcompanion) # comparison of GLMs
+
+d <- read.csv("study_data.csv")
+```
+
+#### Simple linear model
+Let us start with an ordinary linear model with no feature transformations. Explain how far the model works (does it meet formal assumptions?, does it overcome the null model?). Which predictors would you keep there and which of them are not useful? Use the standard evaluation procedures that we have for linear models. 
+```{r}
+simple_lm <- lm(num_awards ~ ., d)
+summary(simple_lm)
+
+# What are the shortcomings of the simple regression?
+plot(d$num_awards+runif(nrow(d),-0.2,0.2),
+     predict(simple_lm, d), 
+     ylab = 'predicted no. awards',
+     xlab = 'real no. awards',
+     ylim = c(-1, 6))
+
+par(mfrow=c(2, 2))
+plot(simple_lm)
+
+# Refer to the lectures what this call measures
+anova(lm(num_awards ~ math + prog + work, d))
+```
+## Add your verbal summary here (1p): 
+
+
+##### Generalized linear model
+Now, the goal is to implement a generalized linear model that conceptually fits the given task. Do not transform the predictors yet, use them as they are, or omit them from the model. Once you obtain your model, interpret the effect of the *math* predictor on the outcome. How (according to your model) increasing a math score by one point affects the number of awards won? 
+
+Explain why the model overcomes the previous linear model, or justify that the generalized model is not needed. Compare the models theoretically as well as technically in terms of a proper quality measure. Note: The difference between the models cannot be statistically tested.
+```{r}
+#### add your code here ####
+
+```
+## Add your verbal summary here (1p): 
+
+
+##### Feature transformations and final model
+*prog* and *work* did not prove to be effective predictors so far. Visualize these predictors as well as their relationship with the outcome variable. Based on the observations, propose suitable transformations for them (or, justify that they are truly uninformative for prediction of *num_awards*) and implement them into the best model found by now. Use the *compareGLM()* function to validate that your new GLMs indeed improved over the simple one.
+```{r}
+typeof(d$prog)
+
+d %>%
+  mutate(prog=as.factor(prog)) %>%
+  group_by(num_awards, prog) %>%
+  summarise(count=n()) %>%
+  ggplot(aes(x = num_awards, y=count, fill = prog)) + 
+  geom_col(position="dodge") + 
+  xlab("Number of awards") + 
+  ylab("no. students")
+
+d %>% 
+  ggplot(aes(x = work, y = num_awards, color = factor(prog))) + 
+  geom_point() + 
+  xlab("Work hours") + 
+  ylab("Number of awards")
+
+#### add your code here ####
+
+```
+
+## Add your verbal summary here (2p): 
+
+##### Ablation study through cross-validation
+Recap all the models considered previously and evaluate them through cross-validation. You can start with the most simple null model and gradually add the previously discussed improvements. See their role in terms of MAE, RMSE and other commonly used criteria. The procedure outlined below proposes to work with *train* function from *caret* package, you can only add more models to evaluate and compare.
+```{r,warning=FALSE}
+train_control <- trainControl(method = "cv", number = 10)
+
+# CV of the null lm model
+train(x = data.frame(rep(1, nrow(d))), 
+      y = d$num_awards, 
+      method = "lm",
+      trControl = train_control)$results 
+
+#### add your code here ####
+
+```
+## Add your verbal summary here (1p): 
+
