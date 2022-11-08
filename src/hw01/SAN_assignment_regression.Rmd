@@ -160,10 +160,15 @@ summary(learnAndTest(X, Y, "lm"))
 In this part, we will be modifying the dependent variables `X` from task 1 by a linear transformation, represented by a square matrix of `n.dimensions` sides.
 For demonstration, consider that the identity function represented by the identity matrix:
 ```{r}
-M0 <- diag(n.dimensions)     # Makes an identity matrix
-X0 <- X %*% M0              # You can check that X0 == X
+M0 <- diag(n.dimensions) # Makes an identity matrix
+X0 <- X %*% M0 # You can check that X0 == X
 noise <- rnorm(n.samples, sd = 8, mean = 0)
 Y0 <- (X0 %*% coefs) + noise # We can reuse the noise as it's independent of X.
+
+# to see the original case
+# print(learnAndTest(X0, Y0, "lm"))
+# print(learnAndTest(X0, Y0, "ridge"))
+# print(learnAndTest(X0, Y0, "lasso"))
 ```
 
 ### Task 3
@@ -174,28 +179,33 @@ In this task, you will show your understanding of the advantages of Ridge by syn
 
 #### Ridge
 ```{r}
+# 1. Start with the identity transformation.
 M1 <- diag(n.dimensions)
-M1.scale_factors <- rlnorm(n.dimensions, meanlog = 1)
-M1.biggest <- sort(M1.scale_factors, index.return = TRUE, decreasing = TRUE)$ix[1:80]
-# M1.fraction <- 0.2
-# M1.selection <- sample(n.dimensions, replace = FALSE, size = round(M1.fraction * n.dimensions))
-# M1.idxs <- M1.selection
-M1.idxs <- M1.biggest
-# M1[M1.idxs, ] <- sample(c(0, 1, 2, 3), replace = TRUE, size = length(M1[, M1.idxs]))
-M1[M1.idxs, ] <- rlnorm(length(M1[M1.idxs, ]), meanlog = 1)
-M1[, M1.idxs] <- 0
-M1[col(M1) == row(M1)] <- M1.scale_factors
+M1.fmin <- 0.2
+M1.fmax <- 4
+# 2. Introduce multicollinearity
+# x_i = x_i + ki_1*x_i-1 + ki_2*x_i-2 + ki_3*x_i-3
+M1[row(M1) + 1 == col(M1)] <- seq(M1.fmin, M1.fmax, length = 99)
+M1[row(M1) + 2 == col(M1)] <- seq(M1.fmax, M1.fmin, length = 98)
+M1[row(M1) + 3 == col(M1)] <- seq(M1.fmin, M1.fmax, length = 97)
+# do not change variable 1
+M1[, 1] <- 0
+M1[1, 1] <- 1
 
 # KEEP THE CODE BELOW
 noise <- rnorm(n.samples, sd = 8, mean = 0)
 X1 <- X %*% M1
 Y1 <- (X1 %*% coefs) + noise
 
-# my additional test code
-X1.cov <- cov(X1)
-X1.cor <- round(cor(X1), 2) > 0.9
-X1.pca <- prcomp(X1, scale. = TRUE)
-summary(X1.pca)
+# additional test code to see what M1 actually did
+# X1.cov <- cov(X1)
+# X1.cor <- round(cor(X1), 2)
+# X1.cor_ <- X1.cor
+# X1.cor_[X1.cor_ > 0.4] <- 1
+# X1.cor_[X1.cor_ < 1] <- 0
+# X1.cor__ <- colSums(X1.cor_)
+# X1.pca <- prcomp(X1, scale. = TRUE)
+# summary(X1.pca)
 ```
 
 Running these test should now make Ridge perform the best.
@@ -204,7 +214,7 @@ print(learnAndTest(X1, Y1, "lm"))
 print(learnAndTest(X1, Y1, "ridge"))
 print(learnAndTest(X1, Y1, "lasso"))
 ```
-**Justification:** Ridge works better than OLS when there is multicollinearity in the features.
+**Justification:** Ridge works better than OLS when there is multicollinearity in the features (independent variables). We construct a transformation matrix such that it adds linear combination of variables $x_i-3$, $x_i-2$ and $x_i-1$ to every variable $x_i$ (except $x_1$, although it shouldn't matter). We ran the test multiple times. The way we transformed the data made LASSO perform visibly worse than Ridge and OLS (in terms of RMSE and $R^2$). Ridge and OLS gave similarly good results. However, **in most cases, Ridge performed best**.
 
 
 #### LASSO (OPTIONAL CHALLENGE)
