@@ -28,6 +28,13 @@ hw02: $(EXPORT_DIR)
 		src/hw02/SAN_assignment_LDA.html \
 		src/hw02/SAN_assignment_LDA.pdf
 
+.PHONY: hw03
+hw03: $(EXPORT_DIR)
+	$(ZIP) -j $(EXPORT_DIR)/$@-$(HW_SUFFIX)-brute.zip \
+		src/hw03/SAN_assignment_GLM.Rmd \
+		src/hw03/SAN_assignment_GLM.html \
+		src/hw03/SAN_assignment_GLM.pdf
+
 .PHONY: midterm
 midterm: $(EXPORT_DIR)
 	$(ZIP) -j $(EXPORT_DIR)/$@-$(HW_SUFFIX)-brute.zip \
