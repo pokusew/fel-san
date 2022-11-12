@@ -1,3 +1,6 @@
-# https://github.com/github/linguist#overrides
-/src/*/task/** linguist-generated
-/src/*/data/** linguist-generated
+# https://github.com/github/linguist/blob/master/docs/overrides.md
+# knitted RMarkdown documents
+/src/*/*.html linguist-generated
+/src/*/*.pdf linguist-generated
+# we are not using Jupyter notebooks
+/src/*/*.ipynb linguist-vendored
