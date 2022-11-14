@@ -57,7 +57,7 @@ library(Rtsne)
 
 # Learn about the perplexity argument in the docs and try different values (suggested values are between 10 and 100)
 # Perplexity parameter should not be bigger than 3 * perplexity < nrow(X) - 1, see details for interpretation.
-tsne_res <- Rtsne::Rtsne(data_numeric, perplexity = 1)
+tsne_res <- Rtsne::Rtsne(data_numeric, perplexity = 60)
 
 # Plot the t-SNE projection
 tsne_res$Y %>%

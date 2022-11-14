@@ -21,28 +21,28 @@ m <- 200       # number of samples
 # 1. Generate the data - we will create a 2D plane that will be placed into a 3D space
 x <- runif(m, -1, 1)
 y <- runif(m, -1, 1)
-plane <- cbind(x, y, z=-x - 0.5*y) # the plane is: x + 0.5y + z=0, the normal vector is (1,0.5,1)
-plane <- plane[order(plane[,"x"] + plane[,"y"]),] # sort observations to be able to visually understand them
+plane <- cbind(x, y, z = -x - 0.5 * y) # the plane is: x + 0.5y + z=0, the normal vector is (1,0.5,1)
+plane <- plane[order(plane[, "x"] + plane[, "y"]),] # sort observations to be able to visually understand them
 
 # 2. Add noise to our plane
 sigma <- 0.2   # standard deviation for the noisy manifolds
 
 noisyPlane <- plane
-noisyPlane[, "z"] <- noisyPlane[, "z"] + rnorm(n=m, mean=0, sd=sigma)
+noisyPlane[, "z"] <- noisyPlane[, "z"] + rnorm(n = m, mean = 0, sd = sigma)
 
 # 3. Plot the data
-scatterplot3d(noisyPlane, color=rainbow(nrow(plane)))
+scatterplot3d(noisyPlane, color = rainbow(nrow(plane)))
 
 # 4. Add the ideal 2D plane grid for better visualization
-s3d <- scatterplot3d(noisyPlane, color=rainbow(nrow(plane)))
+s3d <- scatterplot3d(noisyPlane, color = rainbow(nrow(plane)))
 
 recoveredPlane <- lm(z ~ ., as.data.frame(noisyPlane)) # a linear model will serve as a prescription for the plane grid
-s3d$plane3d(recoveredPlane, lty="solid")               # add the ideal plane to the plot
+s3d$plane3d(recoveredPlane, lty = "solid")               # add the ideal plane to the plot
 
 # 5. Add deviations of the noisy points from the ideal plane
-noisy.3d <- s3d$xyz.convert(noisyPlane[,"x"], noisyPlane[,"y"], noisyPlane[,"z"])  # locations of data points
-flat.3d <- s3d$xyz.convert(noisyPlane[,"x"], noisyPlane[,"y"], plane[,"z"])        # corresponding locations on the regression plane
-segments(noisy.3d$x, noisy.3d$y, flat.3d$x, flat.3d$y, lty="dashed")               # draw lines from data points to plane
+noisy.3d <- s3d$xyz.convert(noisyPlane[, "x"], noisyPlane[, "y"], noisyPlane[, "z"])  # locations of data points
+flat.3d <- s3d$xyz.convert(noisyPlane[, "x"], noisyPlane[, "y"], plane[, "z"])        # corresponding locations on the regression plane
+segments(noisy.3d$x, noisy.3d$y, flat.3d$x, flat.3d$y, lty = "dashed")               # draw lines from data points to plane
 ```
 
 ### Exploring the PCA output
@@ -54,27 +54,41 @@ pca_res <- prcomp(noisyPlane)
 # Use the almighty summary() function to look at the PCA results
 # Question: What information does it tell us?
 summary(pca_res)
+# first two new features captures 98.53 % of variance
 
 # Question: the PCA result has the field called "x". What do you think it represents?
-pca_res$x
+# It represents the transformed features (onto new axes)
+# pca_res$x
 # Maybe plotting the field and comparing it with the original data will help
-scatterplot3d(pca_res$x, color=rainbow(nrow(plane)), zlim = c(-2, 2), type = "h")
-scatterplot3d(noisyPlane, color=rainbow(nrow(plane)))
+scatterplot3d(pca_res$x, color = rainbow(nrow(plane)), zlim = c(-2, 2), type = "h")
+scatterplot3d(noisyPlane, color = rainbow(nrow(plane)))
 # Question: Why the PCA result is in 3D if it's supposed to reduce dimensions?
+# PCA, in fact, tranforms the features into a different space, in which each axes captures some part of the data varaince (information). The axes are ordered by the proportion of varaince they capture. Axis PC1 the biggest part, axis PCn the smallest part.
+# Additionally, the new axes (no each pair of them) are NOT correlated.
+# Each brings new unique information (the amount , they are indendent.
 
 # Now plot the first two columns of the PCA "x" table. Are the dimensions of data what you would expect from PCA?
-plot(___,
-     col=rainbow(nrow(plane)),
-     ylab = "PC2")
+plot(pca_res$x[, 1:2],
+	 col = rainbow(nrow(plane)),
+	 ylab = "PC2"
+)
+
+# unrelated note: corelation in regression > betas have a big range where the model still have the same performance
 ```
 
 ```{r}
 # An important output of PCA is the transformation matrix, accessible in the field "rotation"
 pca_res$rotation
+# PCA's transformation matrix is rotation
+# rotation it is a linear transformation
+# we can tell that the new axes are a linear combination of the old axes
+
+# rottion matrix column vector norms
+sqrt(colSums(pca_res$rotation^2))
 
 # Question: Can you guess, how the matrix transforms/projects the original space?
 # Maybe this plot will help:
-biplot(pca_res, cex=0.7)
+biplot(pca_res, cex = 0.7)
 ```
 
 ### A bit of PCA math
@@ -85,9 +99,13 @@ biplot(pca_res, cex=0.7)
 transform_mat <- pca_res$rotation  # Save the transformation/rotation matrix to a variable for later use
 # calculate the rotation  matrix - it consist of eigen-vectors of the co-variance matrix of your data.
 # Use the eigen() and cov() functions. Compare with reference
-transform_mat2 <- ___
+transform_mat2 <- eigen(cov(noisyPlane))$vectors
+# TODO: Why this is needed only on my computer?
+transform_mat2[,1] <- -1 * transform_mat2[,1]
+transform_mat2[,2] <- -1 * transform_mat2[,2]
 
-my_x <- ___      # Transform the original data by hand (multiply your data with the transformation matrix)
+# Transform the original data by hand (multiply your data with the transformation matrix)
+my_x <- noisyPlane %*% transform_mat2
 my_x_centr <- scale(my_x, center = T, scale = F) # Center the transformed dataset (this is what prcomp() does too)
 round(my_x_centr - pca_res$x) %>% head()  # Compare it with the reference projection. The should be the same
 
