@@ -14,11 +14,11 @@ Breast cancer dataset can be also downloaded here https://www.kaggle.com/uciml/b
 
 ```{r}
 data <- read.csv("breast_cancer.csv")
-data <- data %>% 
+data <- data %>%
   dplyr::select(-id, -X) # remove unnecessary columns
 
 # Explore the data (e.g. with glimpse()). How many dimensions are there?
-data_numeric <- data %>% 
+data_numeric <- data %>%
   dplyr::select(-diagnosis)
 
 # Perform PCA
@@ -27,16 +27,16 @@ data_pca <- prcomp(data_numeric)
 lbs <- data$diagnosis # Save the diagnosis as color labels
 
 # Plot the PCA projection. Is it a good projection given how many features we have?
-fviz_pca_ind(___, geom.ind = "point", pointshape = 21, 
+fviz_pca_ind(___, geom.ind = "point", pointshape = 21,
              fill.ind = lbs,
-             palette = "jco", 
+             palette = "jco",
              addEllipses = TRUE,
              legend.title = "Diagnosis") +
   ggtitle("Breast cancer 2D PCA-plot") +
   theme(plot.title = element_text(hjust = 0.5))
 
 # Questions>
-# 1. What are the disadvantages using all features e.g. in a classification task and visualization?  
+# 1. What are the disadvantages using all features e.g. in a classification task and visualization?
 # 2. How would you choose the "right ones"?
 ```
 
@@ -50,11 +50,11 @@ library(Rtsne)
 tsne_res <- Rtsne::Rtsne(data_numeric, perplexity = ___)
 
 # Plot the t-SNE projection
-tsne_res$Y %>% 
+tsne_res$Y %>%
   as.data.frame() %>%
   # Add labels to the projection
-  mutate(diagnosis = data$diagnosis) %>% 
-  ggplot(aes(x=V1, y=V2, col=diagnosis)) + 
+  mutate(diagnosis = data$diagnosis) %>%
+  ggplot(aes(x=V1, y=V2, col=diagnosis)) +
   geom_point()
 
 # Question>
