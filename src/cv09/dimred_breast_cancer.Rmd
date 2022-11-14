@@ -15,11 +15,12 @@ Breast cancer dataset can be also downloaded here https://www.kaggle.com/uciml/b
 ```{r}
 data <- read.csv("breast_cancer.csv")
 data <- data %>%
-  dplyr::select(-id, -X) # remove unnecessary columns
+	dplyr::select(-id, -X) # remove unnecessary columns
 
 # Explore the data (e.g. with glimpse()). How many dimensions are there?
+# -> 30 features
 data_numeric <- data %>%
-  dplyr::select(-diagnosis)
+	dplyr::select(-diagnosis)
 
 # Perform PCA
 data_pca <- prcomp(data_numeric)
@@ -27,17 +28,25 @@ data_pca <- prcomp(data_numeric)
 lbs <- data$diagnosis # Save the diagnosis as color labels
 
 # Plot the PCA projection. Is it a good projection given how many features we have?
-fviz_pca_ind(___, geom.ind = "point", pointshape = 21,
-             fill.ind = lbs,
-             palette = "jco",
-             addEllipses = TRUE,
-             legend.title = "Diagnosis") +
-  ggtitle("Breast cancer 2D PCA-plot") +
-  theme(plot.title = element_text(hjust = 0.5))
+# -> 30 features
+fviz_pca_ind(
+	data_pca, geom.ind = "point", pointshape = 21,
+	fill.ind = lbs,
+	palette = "jco",
+	addEllipses = TRUE,
+	legend.title = "Diagnosis"
+) +
+	ggtitle("Breast cancer 2D PCA-plot") +
+	theme(plot.title = element_text(hjust = 0.5))
 
 # Questions>
 # 1. What are the disadvantages using all features e.g. in a classification task and visualization?
 # 2. How would you choose the "right ones"?
+
+# reducing dimensionality
+# - feature selection: LASSO
+# - LDA
+# - dimensionality reducation: PCA (intridcues new axes, gets rid of the old ones)
 ```
 
 ## tSNE approach to dimensionality reduction
@@ -47,19 +56,22 @@ fviz_pca_ind(___, geom.ind = "point", pointshape = 21,
 library(Rtsne)
 
 # Learn about the perplexity argument in the docs and try different values (suggested values are between 10 and 100)
-tsne_res <- Rtsne::Rtsne(data_numeric, perplexity = ___)
+# Perplexity parameter should not be bigger than 3 * perplexity < nrow(X) - 1, see details for interpretation.
+tsne_res <- Rtsne::Rtsne(data_numeric, perplexity = 1)
 
 # Plot the t-SNE projection
 tsne_res$Y %>%
-  as.data.frame() %>%
-  # Add labels to the projection
-  mutate(diagnosis = data$diagnosis) %>%
-  ggplot(aes(x=V1, y=V2, col=diagnosis)) +
-  geom_point()
+	as.data.frame() %>%
+	# Add labels to the projection
+	mutate(diagnosis = data$diagnosis) %>%
+	ggplot(aes(x = V1, y = V2, col = diagnosis)) +
+	geom_point()
 
-# Question>
+# Questions>
 # What happens with the projection if you increase/decrease the perplexity values?
+#   smaller perplexity > greater resolution, it can capture more topology
 # How does the projection differ compared to PCA?
+#   PCA uses linear sth.
 ```
 
 ## PCA revisited
