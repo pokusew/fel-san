@@ -1,0 +1,194 @@
+---
+title: "Dimensionality reduction"
+output: pdf_document
+---
+
+### Overview
+
+This notebook serves as an introduction to PCA in R. We will explore two artificial datasets - starting with a plane and later with a sphere. We will look at the way PCA works and what insights can we obtain from performing such an analysis.
+
+```{r setup, echo=FALSE, message=FALSE, warning=FALSE,}
+library(dplyr)
+library(scatterplot3d) # 3d plots
+library(mvtnorm) # generate spheres
+```
+
+## PCA - artificial datasets
+### Data generation
+```{r}
+m <- 200       # number of samples
+
+# 1. Generate the data - we will create a 2D plane that will be placed into a 3D space
+x <- runif(m, -1, 1)
+y <- runif(m, -1, 1)
+plane <- cbind(x, y, z=-x - 0.5*y) # the plane is: x + 0.5y + z=0, the normal vector is (1,0.5,1) 
+plane <- plane[order(plane[,"x"] + plane[,"y"]),] # sort observations to be able to visually understand them
+
+# 2. Add noise to our plane
+sigma <- 0.2   # standard deviation for the noisy manifolds
+
+noisyPlane <- plane
+noisyPlane[, "z"] <- noisyPlane[, "z"] + rnorm(n=m, mean=0, sd=sigma)
+
+# 3. Plot the data
+scatterplot3d(noisyPlane, color=rainbow(nrow(plane)))
+
+# 4. Add the ideal 2D plane grid for better visualization
+s3d <- scatterplot3d(noisyPlane, color=rainbow(nrow(plane)))
+
+recoveredPlane <- lm(z ~ ., as.data.frame(noisyPlane)) # a linear model will serve as a prescription for the plane grid
+s3d$plane3d(recoveredPlane, lty="solid")               # add the ideal plane to the plot
+
+# 5. Add deviations of the noisy points from the ideal plane
+noisy.3d <- s3d$xyz.convert(noisyPlane[,"x"], noisyPlane[,"y"], noisyPlane[,"z"])  # locations of data points
+flat.3d <- s3d$xyz.convert(noisyPlane[,"x"], noisyPlane[,"y"], plane[,"z"])        # corresponding locations on the regression plane
+segments(noisy.3d$x, noisy.3d$y, flat.3d$x, flat.3d$y, lty="dashed")               # draw lines from data points to plane
+```
+
+### Exploring the PCA output
+```{r}
+# PCA call
+pca_res <- prcomp(noisyPlane) 
+# With real data, you will want to set the argument *scale=True*
+
+# Use the almighty summary() function to look at the PCA results
+# Question: What information does it tell us? 
+summary(pca_res)
+
+# Question: the PCA result has the field called "x". What do you think it represents?
+pca_res$x
+# Maybe plotting the field and comparing it with the original data will help
+scatterplot3d(pca_res$x, color=rainbow(nrow(plane)), zlim = c(-2, 2), type = "h") 
+scatterplot3d(noisyPlane, color=rainbow(nrow(plane)))
+# Question: Why the PCA result is in 3D if it's supposed to reduce dimensions?
+
+# Now plot the first two columns of the PCA "x" table. Are the dimensions of data what you would expect from PCA?
+plot(___, 
+     col=rainbow(nrow(plane)), 
+     ylab = "PC2") 
+```
+
+```{r}
+# An important output of PCA is the transformation matrix, accessible in the field "rotation"
+pca_res$rotation 
+
+# Question: Can you guess, how the matrix transforms/projects the original space?
+# Maybe this plot will help:
+biplot(pca_res, cex=0.7) 
+```
+
+### A bit of PCA math
+```{r}
+## Let's try to compute the matrix "x" (the transformed data) by hand
+
+# First, let's compute also the "rotation" matrix by hand
+transform_mat <- pca_res$rotation  # Save the transformation/rotation matrix to a variable for later use
+# calculate the rotation  matrix - it consist of eigen-vectors of the co-variance matrix of your data. 
+# Use the eigen() and cov() functions. Compare with reference
+transform_mat2 <- ___
+
+my_x <- ___      # Transform the original data by hand (multiply your data with the transformation matrix)
+my_x_centr <- scale(my_x, center = T, scale = F) # Center the transformed dataset (this is what prcomp() does too)
+round(my_x_centr - pca_res$x) %>% head()  # Compare it with the reference projection. The should be the same
+
+## Can we reconstruct the original data from transformed "x"? Of course, PCA is a loss-less transformation
+noisyPlane_reconstr <- my_x %*% t(transform_mat) 
+round(noisyPlane_reconstr - noisyPlane) %>% head() # Compare reconstruction with original data. The should be the same
+# Why we need to multiply our projection with the transpose of rotation matrix:
+# https://stats.stackexchange.com/questions/229092/how-to-reverse-pca-and-reconstruct-original-variables-from-several-principal-com
+```
+
+```{r}
+## Here, we perform dimensionality reduction by discarding PC3. 
+noisyPlane_reduced <- pca_res$x[, 1:2]
+# What happens, if we try to reconstruct the original 3D space using this 2D projection??
+# Again, reconstruct by the inverse of transformation matrix (take care of dimensions!)
+noisyPlane_2d_reconstr <- noisyPlane_reduced %*% t(___)
+
+# Now let's see, how the reconstruction went
+s3d <- scatterplot3d(noisyPlane)  # Plot original points as black circles
+s3d$points3d(noisyPlane_2d_reconstr, col=rainbow(m), pch=4)  # Add the reconstruction from 2D data
+recovered.3d <- s3d$xyz.convert(noisyPlane_2d_reconstr[,"x"], noisyPlane_2d_reconstr[,"y"], noisyPlane_2d_reconstr[,"z"])  
+flat.3d <- s3d$xyz.convert(noisyPlane_2d_reconstr[,"x"], noisyPlane_2d_reconstr[,"y"], fitted(recoveredPlane)) # corresponding locations on the regression plane
+segments(recovered.3d$x, recovered.3d$y, flat.3d$x, flat.3d$y, lty="dashed")  # draw lines from data points to plane
+
+# Result: the 2D reconstruction in 3D is still a perfect plane. 
+# We can however view this imperfect reconstruction as noise removal!
+```
+
+### Notes on reconstruction error
+```{r echo=FALSE}
+#' Calculate mean reconstruction error
+#'
+#' @param x the original sample matrix (samples in rows, features in columns)
+#' @param r the sample matrix after reconstruction (samples in rows, features in columns), the same dimension as x
+#' @return the mean reconstruction error
+#' @export
+recError <- function(x, r){
+  if (sum(dim(x)==dim(r)) != 2){stop("Different dimensions!")}
+  recError <- 0
+  for (i in 1:nrow(x)){
+    # The error is Euclidean distance between reconstruction and original position
+    recError <- recError + sqrt(sum((x[i,] - r[i,])^2))
+  }
+  return(recError / nrow(x))
+}
+```
+
+Reconstruction error is a metric, that tells us how well the PCA reduction preserves information in our data. In the previous section we tried to recover the original space using both full 3D transformation and 2D reduction. The 3D case was loss-less, whereas in 2D the points didn't 100% fit their original images. This is natural as we go from lower-dimensional space to higher one.
+
+When looking at the reconstruction error, let us see the error caused by noise in the input space. This error serves as a reference. Its value is `r recError(plane, noisyPlane)`. We witnessed, that reconstruction with no dimensionality reduction fully recovers the original *noisyPlane*, the reconstruction error is `r recError(noisyPlane, noisyPlane_reconstr)`. Next, we can see that *noisyPlane* is still well captured after the reduction to 2D, the reconstruction error is `r recError(noisyPlane, noisyPlane_2d_reconstr)`. 
+
+Now, let us compare the original plane without any noise and the plane recovered after the dimensionality reduction. This error is `r recError(plane, noisyPlane_2d_reconstr)`. If smaller than the error in the *noisyPlane* (the first one), dimensionality reduction works as (partial) denoising.
+
+There is a couple of reasons why denoising is not perfect in terms of our reconstruction error. Firstly, the plane is learnt from a limited sample, it is not recovered perfectly. Compare the normal vector of the original plane (0.66,0.33,0.66) and the normal vector of the denoised plane given by PC3 (the perpendicular vector to the recovered plane captured by PC1 and PC2) which is `r pca_res$rotation[,"PC3"]`. Secondly, denosing means to map to any point that lies on the manifold, that ncessarily does not have to be the original point (compare the two error definitions in the lecture).
+
+### When PCA doesn't work
+This section demonstrates that PCA has limitations when it comes to data with rather uniform variance in all directions.
+An example can be a dataset forming a sphere:
+```{r}
+set.seed(42)
+D = 3         # number of input dimensions
+
+dirs <- rmvnorm(n = m, mean = rep(0, D)) # sample
+colnames(dirs) <- c("x","y","z")
+sphere <- dirs / sqrt(rowSums(dirs^2)) # normalize
+sphere <- sphere[order(sphere[,"z"]+cos(sphere[,"x"])+cos(sphere[,"y"])),] # sort observations to be able to visually understand them
+noisySphere <- sphere + rmvnorm(n = m, mean = rep(0, D), sigma = sigma/20 * diag(D)) # add noise
+
+# Plot an "ideal" sphere and version with added noise
+scatterplot3d(sphere,color=rainbow(m))
+scatterplot3d(noisySphere,color=rainbow(m))
+```
+
+The procedure remains the same. The script shows that PCA captures the manifold, dimensionality reduction maintains a major part of variance and may partly denoise the samples.
+```{r}
+pca_noisySphere <- prcomp(noisySphere) 
+# get info about projection
+summary(pca_noisySphere) 
+# notice the first component captures only slightly more than 1/3 of variance!
+# considering we have 3D space, and arbitrary "best" axis would capture at worst 1/3 variation too. 
+
+biplot(pca_noisySphere,cex=0.7)
+
+# see the projection in the transformed space, no reduction
+scatterplot3d(pca_noisySphere$x, color=rainbow(nrow(sphere)), zlim = c(-2,2)) 
+
+## Dimensionality reduction - discard PC3. 
+noisySphere_reduced <- pca_noisySphere$x[, 1:2]
+# see the projection in the transformed space, this time with reduction to 2D
+plot(noisySphere_reduced, col=rainbow(nrow(sphere)), ylab = "PC2") 
+
+# Reconstruction of the original 3D space from 2D projection will not go as well as in case of the plane. 
+# Prepare data first
+noisySphere_2d_reconstr <- noisySphere_reduced %*% t(pca_noisySphere$rotation[, 1:2])
+# Now let's wee, how the reconstruction went
+s3d <- scatterplot3d(noisySphere)  # Plot original points as black circles
+s3d$points3d(noisySphere_2d_reconstr, col=rainbow(m), pch=4)  # Add the reconstruction from 2D data
+recovered.3d <- s3d$xyz.convert(noisySphere_2d_reconstr[,"x"], noisySphere_2d_reconstr[,"y"], noisySphere_2d_reconstr[,"z"])  
+
+orig.3d <- s3d$xyz.convert(sphere[,"x"],sphere[,"y"], sphere[,"z"]) # the original sphere
+segments(recovered.3d$x, recovered.3d$y, orig.3d$x, orig.3d$y, lty="dashed")  # draw lines from data points to Sphere
+
+```
+
