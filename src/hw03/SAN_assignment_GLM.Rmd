@@ -4,13 +4,13 @@ author: "Martin Endler <endlemar@fel.cvut.cz>"
 output: html_document
 ---
 
-#### Introduction
+## Introduction
 The aim of this assignment is to practice constructing linear models. You will start with a simple linear model. You will evaluate and interpret it (1p). Consequently, your task will be to improve this model using generalized linear models (GLMs) and feature transformations. You will get 1p for proposal and evaluation of GLM (family, evaluation, interpretation), 1p for correct feature transformations, 1p for proposal and justification of the final model and eventually, 1p for comprehensive evaluation of all the model improvements (ablation study through cross-validation, note that the previous evaluations must be done without cross-validation).
 
-#### Input data
+## Input data
 In this assignment, you will work with a student dataset. The dataset contains 200 samples and 4 features: *num_awards* is the outcome variable and indicates the number of awards earned by students in a year, *math* is a continuous predictor variable and represents students’ scores on their math final exam, *prog* is a categorical predictor variable with three levels indicating the type of program in which the students were enrolled (1 = “General”, 2 = “Academic” and 3 = “Vocational”), and *work* is a continuous predictor that gives the number of hours that students spent at work on average per week.
 
-#### Load the necessary libraries and the dataset
+## Load the necessary libraries and the dataset
 ```{r results = "hide"}
 library(dplyr)
 library(caret) # comprehensive model evaluation
@@ -22,7 +22,7 @@ d <- read.csv("study_data.csv")
 prog_labels <- c("1: General", "2: Academic", "3: Vocational")
 ```
 
-#### A few preliminary explorations
+## A few preliminary explorations
 
 ```{r}
 # distribution of num_awards in our data
@@ -55,7 +55,7 @@ d.cov <- cov(d)
 d.cor <- cor(d)
 ```
 
-#### Simple linear model
+## Simple linear model
 Let us start with an ordinary linear model with no feature transformations. Explain how far the model works (does it meet formal assumptions?, does it overcome the null model?). Which predictors would you keep there and which of them are not useful? Use the standard evaluation procedures that we have for linear models.
 ```{r}
 simple_lm <- lm(num_awards ~ ., d)
@@ -83,7 +83,9 @@ hist(d$num_awards)
 # Refer to the lectures what this call measures
 anova(lm(num_awards ~ math + prog + work, d))
 ```
-## Add your verbal summary here (1p):
+### Add your verbal summary here (1p):
+
+TODO
 
 In order for the OLS to work, assumptions are
 
@@ -91,11 +93,10 @@ Q-Q plot
 normal
 outliers: data points with id 95, 96 (5 awards), 194 (6 awards)
 
-
 only math predictor is significant
 
 
-##### Generalized linear model
+## Generalized linear model
 Now, the goal is to implement a generalized linear model that conceptually fits the given task. Do not transform the predictors yet, use them as they are, or omit them from the model. Once you obtain your model, interpret the effect of the *math* predictor on the outcome. How (according to your model) increasing a math score by one point affects the number of awards won?
 
 Explain why the model overcomes the previous linear model, or justify that the generalized model is not needed. Compare the models theoretically as well as technically in terms of a proper quality measure. Note: The difference between the models cannot be statistically tested.
@@ -113,24 +114,43 @@ d %>%
 	facet_grid(cols = vars(bin)) +
 	ggtitle("num_awards per math score group")
 
-# Let's try the Poisson regression, which should be better suited - we have count data
-# and its distribution seem to be Poisson.
+# # Step 2:
+# Let's try the Poisson regression, which should be a better fit than OLS
+# - we have count data and its distribution seems to be Poisson.
+# Use only math predictor.
+poiss_v1_glm <- glm(num_awards ~ math, family = "poisson", data = d)
+print('poiss_v1_glm:')
+summary(poiss_v1_glm)
 
-poiss_reg <- glm(num_awards ~ math, family = "poisson", data = d)
-summary(poiss_reg)
+# predict
+poiss_v1_glm_preds <- predict(poiss_reg, d, type = "response")
+poiss_v1_glm_preds_r <- round(poiss_v1_glm_preds)
 
-# predict(poiss_reg, d)
-preds <- round(predict(poiss_reg, d, type = "response"))
-
+# vizualize
 d %>%
-	mutate(preds = preds) %>%
+	mutate(preds = poiss_v1_glm_preds) %>%
 	ggplot(aes(x = math, y = num_awards)) +
 	geom_point(size = 1.5, color = 'gray') +
 	geom_jitter(size = 1, width = 0.3, height = 0.3, color = 'black') +
 	# ggplot can do glm by itself
-	geom_smooth(method = 'glm', formula = y ~ x, method.args = list(family = "gaussian")) +
-	geom_point(aes(x = math, y = preds, col = "predicted")) +
+	geom_smooth(method = "glm", formula = y ~ x, method.args = list(family = "poisson")) +
+	geom_smooth(method = "glm", formula = y ~ x, method.args = list(family = "gaussian")) +
+	# but let's also vizualize the predictions manually
+	geom_point(aes(x = math, y = poiss_v1_glm_preds, col = "predicted")) +
 	theme_minimal()
+
+# Step 3: Compare with the previous simple linear regression model
+# We need s
+# for comparison, fit the linear regression again, but this time with the glm() function
+# family = "gaussian" is equivalent to the simple linear regression
+simple_glm_full <- glm(num_awards ~ ., family = "gaussian", data = d)
+print('simple_glm_full:')
+summary(simple_glm_full)
+simple_glm_math <- glm(num_awards ~ math, family = "gaussian", data = d)
+print('simple_glm_math:')
+summary(simple_glm_math)
+
+
 
 # Questions> Look at the summary - what is the equation of the model?
 #     Knowing the model prescription, think of how can we interpret the coefficients
@@ -139,10 +159,12 @@ d %>%
 #       head_age + 1 -> fs = fs_prev * e^(coef)
 
 ```
-## Add your verbal summary here (1p):
+### Add your verbal summary here (1p):
+
+TODO
 
 
-##### Feature transformations and final model
+## Feature transformations and final model
 *prog* and *work* did not prove to be effective predictors so far. Visualize these predictors as well as their relationship with the outcome variable. Based on the observations, propose suitable transformations for them (or, justify that they are truly uninformative for prediction of *num_awards*) and implement them into the best model found by now. Use the *compareGLM()* function to validate that your new GLMs indeed improved over the simple one.
 ```{r}
 typeof(d$prog)
@@ -166,9 +188,12 @@ d %>%
 
 ```
 
-## Add your verbal summary here (2p):
+### Add your verbal summary here (2p):
 
-##### Ablation study through cross-validation
+TODO
+
+
+## Ablation study through cross-validation
 Recap all the models considered previously and evaluate them through cross-validation. You can start with the most simple null model and gradually add the previously discussed improvements. See their role in terms of MAE, RMSE and other commonly used criteria. The procedure outlined below proposes to work with *train* function from *caret* package, you can only add more models to evaluate and compare.
 ```{r,warning=FALSE}
 train_control <- trainControl(method = "cv", number = 10)
@@ -201,5 +226,6 @@ summary(
 )
 
 ```
-## Add your verbal summary here (1p):
+### Add your verbal summary here (1p):
 
+TODO
