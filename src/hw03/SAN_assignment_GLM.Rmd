@@ -33,9 +33,11 @@ d %>%
 	geom_histogram(binwidth = 0.5, center = 0) +
 	ggtitle("Distribution of num_awards")
 
+typeof(d$prog)
 # copy of data where prog is a factor
 # d2 <- d %>% mutate(prog = as.factor(prog))
 d2 <- d %>% mutate(prog = factor(prog, labels = prog_labels))
+typeof(d2$prog)
 
 # relationship between math score and num_awards (also considering the program)
 d2 %>%
@@ -123,7 +125,7 @@ print('poiss_v1_glm:')
 summary(poiss_v1_glm)
 
 # predict
-poiss_v1_glm_preds <- predict(poiss_reg, d, type = "response")
+poiss_v1_glm_preds <- predict(poiss_v1_glm, d, type = "response")
 poiss_v1_glm_preds_r <- round(poiss_v1_glm_preds)
 
 # vizualize
@@ -167,10 +169,11 @@ TODO
 ## Feature transformations and final model
 *prog* and *work* did not prove to be effective predictors so far. Visualize these predictors as well as their relationship with the outcome variable. Based on the observations, propose suitable transformations for them (or, justify that they are truly uninformative for prediction of *num_awards*) and implement them into the best model found by now. Use the *compareGLM()* function to validate that your new GLMs indeed improved over the simple one.
 ```{r}
-typeof(d$prog)
+# Note:
+#   We defined d2 with the prog column of type factor in Section "A few preliminary explorations",
+#   where we also did a few visualizations some of which we will repeat below.
 
-d %>%
-	mutate(prog = as.factor(prog)) %>%
+d2 %>%
 	group_by(num_awards, prog) %>%
 	summarise(count = n()) %>%
 	ggplot(aes(x = num_awards, y = count, fill = prog)) +
@@ -178,13 +181,66 @@ d %>%
 	xlab("Number of awards") +
 	ylab("no. students")
 
-d %>%
-	ggplot(aes(x = work, y = num_awards, color = factor(prog))) +
+d2 %>%
+	ggplot(aes(x = work, y = num_awards, color = prog)) +
 	geom_point() +
-	xlab("Work hours") +
+	xlab("Work hours avg per week") +
 	ylab("Number of awards")
 
-#### add your code here ####
+# relationship between math score and num_awards (also considering the program)
+d2 %>%
+	ggplot(aes(x = math, y = num_awards, shape = prog, color = prog)) +
+	geom_jitter(size = 4, width = 0.2, height = 0.2) +
+	xlab("Math final exam score") +
+	ylab("Number of awards")
+
+# relationship between work (the number of hours that student spent at work on average per week)
+# and num_awards (also considering the program)
+d2 %>%
+	ggplot(aes(x = work, y = num_awards)) +
+	geom_jitter(aes(shape = prog, color = prog), size = 4, width = 0.2, height = 0.2) +
+	geom_smooth(method = "glm", formula = y ~ poly(x, 2), method.args = list(family = "poisson")) +
+	xlab("Work hours avg per week") +
+	ylab("Number of awards")
+
+d3 <- d %>% mutate(
+	prog2 = (abs(prog - 2L) * -1L) + 1L,
+	prog2_f = factor(prog2, labels = c("0: Non-academic", "1: Academic")),
+	prog_f = factor(prog, labels = prog_labels)
+)
+
+poiss_v2_glm <- glm(num_awards ~ math + poly(prog, 2) + poly(work, 2), family = "poisson", data = d)
+print('poiss_v2_glm:')
+summary(poiss_v2_glm)
+
+# predict
+poiss_v2_glm_preds <- predict(poiss_v2_glm, d, type = "response")
+poiss_v2_glm_preds_r <- round(poiss_v2_glm_preds)
+
+d3 %>%
+	ggplot(aes(x = prog, y = num_awards)) +
+	geom_smooth(method = "glm", formula = y ~ poly(x, 2), method.args = list(family = "poisson")) +
+	geom_jitter(aes(color = prog_f))
+
+d3 %>%
+	ggplot(aes(x = prog2, y = num_awards)) +
+	geom_smooth(method = "glm", formula = y ~ x, method.args = list(family = "poisson")) +
+	geom_jitter(aes(color = prog2_f))
+
+
+# TODO: math exam score by prog
+d3 %>%
+	ggplot(aes(x = math)) +
+	geom_histogram(binwidth = 5, center = 0, fill = 'gray', color = 'white') +
+	facet_grid(cols = vars(prog_f)) +
+	ggtitle("math exam score per prog")
+
+
+d3.cor <- d3 %>% select(-prog_f, -prog2_f) %>% cor()
+
+# TODO: transform predictors
+
+
 
 ```
 
