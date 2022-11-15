@@ -25,14 +25,6 @@ prog_labels <- c("1: General", "2: Academic", "3: Vocational")
 #### A few preliminary explorations
 
 ```{r}
-# hist(
-# 	x = d$num_awards,
-# 	breaks = length(unique(d$num_awards)),
-# 	xlab = "num_awards",
-# 	ylab = "no. samples",
-# 	main = "Distribution of num_awards"
-# )
-
 # distribution of num_awards in our data
 # num_awards is a discrete outcome (aka reponse or depdenent) variable
 # that represents count data. It is always non-negative.
@@ -41,6 +33,7 @@ d %>%
 	geom_histogram(binwidth = 0.5, center = 0) +
 	ggtitle("Distribution of num_awards")
 
+# copy of data where prog is a factor
 # d2 <- d %>% mutate(prog = as.factor(prog))
 d2 <- d %>% mutate(prog = factor(prog, labels = prog_labels))
 
@@ -55,14 +48,11 @@ d2 %>%
 	ggplot(aes(x = work, y = num_awards, shape = prog, color = prog)) +
 	geom_jitter(size = 4, width = 0.2, height = 0.2)
 
-d2 %>%
-	ggplot(aes(x = prog, y = work)) +
-	geom_jitter(size = 4, width = 0.2, height = 0.2)
+# hist(d$work)
 
 # covariation and correlation matrices might be useful
 d.cov <- cov(d)
 d.cor <- cor(d)
-
 ```
 
 #### Simple linear model
@@ -74,6 +64,8 @@ summary(simple_lm)
 simple_lm_preds <- predict(simple_lm, d)
 
 # What are the shortcomings of the simple regression?
+# Among other things, it might predict a negative number of awards which does not make any sense.
+# But we could just consder all values below 0 as 0.
 plot(
 	x = d$num_awards + runif(nrow(d), -0.2, 0.2),
 	y = simple_lm_preds,
@@ -93,12 +85,15 @@ anova(lm(num_awards ~ math + prog + work, d))
 ```
 ## Add your verbal summary here (1p):
 
+In order for the OLS to work, assumptions are
 
 Q-Q plot
 normal
-outliers data points with id 95, 96 (5 awards), 194 (6 awards)
+outliers: data points with id 95, 96 (5 awards), 194 (6 awards)
 
-lognormal/Possionns
+
+only math predictor is significant
+
 
 ##### Generalized linear model
 Now, the goal is to implement a generalized linear model that conceptually fits the given task. Do not transform the predictors yet, use them as they are, or omit them from the model. Once you obtain your model, interpret the effect of the *math* predictor on the outcome. How (according to your model) increasing a math score by one point affects the number of awards won?
