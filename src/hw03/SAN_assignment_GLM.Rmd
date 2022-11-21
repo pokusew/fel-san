@@ -2,8 +2,8 @@
 title: "Generalized Linear Models"
 author: "Martin Endler <endlemar@fel.cvut.cz>"
 output:
-pdf_document: default
-html_document: default
+  pdf_document: default
+  html_document: default
 ---
 
 ## Introduction
@@ -296,37 +296,7 @@ Finally, we compare 5 different GLMs. We see that our **v3** model ("num_awards 
 
 ## Ablation study through cross-validation
 Recap all the models considered previously and evaluate them through cross-validation. You can start with the most simple null model and gradually add the previously discussed improvements. See their role in terms of MAE, RMSE and other commonly used criteria. The procedure outlined below proposes to work with *train* function from *caret* package, you can only add more models to evaluate and compare.
-```{r,warning=FALSE}
-train_control <- trainControl(method = "cv", number = 10)
 
-# CV of the null lm model
-print(train(
-	x = data.frame(rep(1, nrow(d))),
-	y = d$num_awards,
-	method = "lm",
-	trControl = train_control
-)$results)
-
-# CV of the simple linear model with all predictors
-print('t' + train(
-	x = d %>% select(prog, math, work),
-	y = d$num_awards,
-	method = "lm",
-	trControl = train_control
-)$results)
-
-# CV of the simple linear model with math predictor only
-summary(
-	train(
-		x = d %>% select(math),
-		y = d$num_awards,
-		trControl = train_control,
-		method = "glm",
-		family = "poisson",
-	)
-)
-
-```
 ### Add your verbal summary here (1p):
 
 TODO: I didn't have time to finish this in time.
