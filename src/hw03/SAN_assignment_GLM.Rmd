@@ -1,7 +1,9 @@
 ---
 title: "Generalized Linear Models"
 author: "Martin Endler <endlemar@fel.cvut.cz>"
-output: html_document
+output:
+  pdf_document: default
+  html_document: default
 ---
 
 ## Introduction
@@ -26,6 +28,7 @@ prog_labels <- c("1: General", "2: Academic", "3: Vocational")
 
 ```{r}
 # distribution of num_awards in our data
+# (so that we have an idea of what we are dealing with)
 # num_awards is a discrete outcome (aka reponse or depdenent) variable
 # that represents count data. It is always non-negative.
 d %>%
@@ -33,11 +36,13 @@ d %>%
 	geom_histogram(binwidth = 0.5, center = 0) +
 	ggtitle("Distribution of num_awards")
 
+# d2 - copy of data (d) where prog is a factor
 typeof(d$prog)
-# copy of data where prog is a factor
+is.factor(d$prog)
 # d2 <- d %>% mutate(prog = as.factor(prog))
 d2 <- d %>% mutate(prog = factor(prog, labels = prog_labels))
 typeof(d2$prog)
+is.factor(d2$prog)
 
 # relationship between math score and num_awards (also considering the program)
 d2 %>%
@@ -49,8 +54,6 @@ d2 %>%
 d2 %>%
 	ggplot(aes(x = work, y = num_awards, shape = prog, color = prog)) +
 	geom_jitter(size = 4, width = 0.2, height = 0.2)
-
-# hist(d$work)
 
 # covariation and correlation matrices might be useful
 d.cov <- cov(d)
@@ -66,7 +69,7 @@ summary(simple_lm)
 simple_lm_preds <- predict(simple_lm, d)
 
 # What are the shortcomings of the simple regression?
-# Among other things, it might predict a negative number of awards which does not make any sense.
+# Among other things, it might predict a negative number of awards which makes no sense.
 # But we could just consder all values below 0 as 0.
 plot(
 	x = d$num_awards + runif(nrow(d), -0.2, 0.2),
@@ -80,22 +83,31 @@ plot(
 par(mfrow = c(2, 2))
 plot(simple_lm)
 
-hist(d$num_awards)
-
 # Refer to the lectures what this call measures
 anova(lm(num_awards ~ math + prog + work, d))
 ```
 ### Add your verbal summary here (1p):
 
-TODO
+When we fitted an ordinary linear model using `lm` we got the following model:
 
-In order for the OLS to work, assumptions are
+$$ num_awards = -2.536 + 0.110 * prog + 0.057 * math - 0.002 work $$
 
-Q-Q plot
-normal
-outliers: data points with id 95, 96 (5 awards), 194 (6 awards)
+First, from the model summary, we can tell that **our fitted model is significantly better than the intercept-only model*** _(using F-test, based on the value of F-statistic, which is 22.16 on 3 and 196 DF, we reject the null hypothesis (p-value << 0.05) that the intercept-only model fits the data as well as our model)_.
 
-only math predictor is significant
+Before interpreting the model, we should check whether the formal assumptions (noise normality, linearity, homoscedasticity) of OLS are met. Residual plots and the Q-Q plot are useful for this. From the "Residuals vs Fitted" plot, we can note the **homoscedasticity is most probably violated** (variance is not constant, i.e., we have heteroscedasticity): as we move to the right on the x-axis, the spread of the residuals seems to be increasing (and further, the spread is not symmetrical about the x-axis). Next, from the "Normal Q-Q" plot, we can tell that the noise **normality assumption is a bit violated**. All points should be on (or close to) the dashed line, but in our case, the points in the right part of the plot are shifted to the top. This particular shape expresses the fact that the data (their error dist.) are skewed on one side. These violations are no surprise since `num_awards` represents **count data**. Count data are characterized by heteroscedasticity and their error distribution is skewed.
+
+Additionally, the model might also **predict a negative number of awards** which makes no sense.
+
+To sum up, the simple linear regression (OLS) is not a good fit for our data, so we need to be careful when interpreting or trusting the fitted model.
+
+Nevertheless, let's continue with evaluating our fitted model.
+
+Adjusted R-squared is only 0.2418 which means our model explains only 24 % of the variance in the data.
+
+Looking at the coefficients table, we can see that only the **math** predictor is significant.
+By increasing a math score by one point, the number of awards increases by 0.057. This makes sense as students with higher math exam scores could be more likely to receive a higher number of awards.
+
+Also, by looking at ANOVA table, we would say that only **math** predictor is worth keeping in our model.
 
 
 ## Generalized linear model
@@ -133,37 +145,50 @@ d %>%
 	mutate(preds = poiss_v1_glm_preds) %>%
 	ggplot(aes(x = math, y = num_awards)) +
 	geom_point(size = 1.5, color = 'gray') +
-	geom_jitter(size = 1, width = 0.3, height = 0.3, color = 'black') +
+	geom_jitter(size = 1.5, width = 0.3, height = 0.3, color = 'green') +
 	# ggplot can do glm by itself
 	geom_smooth(method = "glm", formula = y ~ x, method.args = list(family = "poisson")) +
 	geom_smooth(method = "glm", formula = y ~ x, method.args = list(family = "gaussian")) +
 	# but let's also vizualize the predictions manually
-	geom_point(aes(x = math, y = poiss_v1_glm_preds, col = "predicted")) +
+	geom_point(aes(x = math, y = poiss_v1_glm_preds, color = "Poiss predictions")) +
 	theme_minimal()
 
 # Step 3: Compare with the previous simple linear regression model
-# We need s
-# for comparison, fit the linear regression again, but this time with the glm() function
-# family = "gaussian" is equivalent to the simple linear regression
+# We need some common ground for comparison,
+# so let's fit the linear regression again, but this time with the glm() function
+# (family = "gaussian" is equivalent to the simple linear regression).
 simple_glm_full <- glm(num_awards ~ ., family = "gaussian", data = d)
 print('simple_glm_full:')
 summary(simple_glm_full)
 simple_glm_math <- glm(num_awards ~ math, family = "gaussian", data = d)
 print('simple_glm_math:')
 summary(simple_glm_math)
-
-
-
-# Questions> Look at the summary - what is the equation of the model?
-#     Knowing the model prescription, think of how can we interpret the coefficients
-#       Ask the usual question "How does the output change with a unit increase of the predictor?"
-#       The relationship is multiplicative.
-#       head_age + 1 -> fs = fs_prev * e^(coef)
-
 ```
 ### Add your verbal summary here (1p):
 
-TODO
+Our response variable (number of awards) represents count data. For that Poisson regression could be more appropriate.
+
+First, we assess the applicability of Poisson regression by slicing the data at each math-points-group and observing the distribution (histogram) of the count response (num_awards). We conclude, that, indeed, for each level of x (math), the responses (num_awards) follows a Poisson distribution.
+
+We fit the model using `glm(num_awards ~ math, family = "poisson", data = d)` (Poisson regression, using only math predictor).
+
+According to our model, relationship between **math** and **num_wards** won is multiplicative.
+By increasing a math score by one point, the *num_wards* won multiplies by $e^0.086$ where 0.086 is the math coefficient from the Poisson reg. coefficients table.
+```{r}
+num_awards_math_1 <- predict(poiss_v1_glm, newdata = data.frame(math = 45), type = "response")[[1]]
+num_awards_math_2 <- predict(poiss_v1_glm, newdata = data.frame(math = 46), type = "response")[[1]]
+
+num_awards_math_2_test <- num_awards_math_1 * exp(poiss_v1_glm$coefficients[["math"]])
+
+# should be the same (diff 0):
+print(paste("diff =", num_awards_math_2 - num_awards_math_2_test))
+```
+
+In order to compare Poisson model with the simple linear model, we need to find some common ground.
+We fit simple linear model again, but this time using `glm(num_awards ~ math, family = "gaussian", data = d)`.
+Then we can compare **AIC**. Our Poisson model has a lower (which is better) AIC (384.08) than the simple linear model (AIC 538.8).
+
+Our Poisson model overcomes the simple linear model because Poisson regression is better suited for count data. Among other things, Poisson regression does not predict negative counts.
 
 
 ## Feature transformations and final model
