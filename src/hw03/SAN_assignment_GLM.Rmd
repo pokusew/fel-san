@@ -2,8 +2,8 @@
 title: "Generalized Linear Models"
 author: "Martin Endler <endlemar@fel.cvut.cz>"
 output:
-  pdf_document: default
-  html_document: default
+pdf_document: default
+html_document: default
 ---
 
 ## Introduction
@@ -186,7 +186,7 @@ print(paste("diff =", num_awards_math_2 - num_awards_math_2_test))
 
 In order to compare Poisson model with the simple linear model, we need to find some common ground.
 We fit simple linear model again, but this time using `glm(num_awards ~ math, family = "gaussian", data = d)`.
-Then we can compare **AIC**. Our Poisson model has a lower (which is better) AIC (384.08) than the simple linear model (AIC 538.8).
+Then we can compare **AIC**. Our Poisson model has a lower (which is better) AIC **384.08** than the simple linear model (AIC 538.8).
 
 Our Poisson model overcomes the simple linear model because Poisson regression is better suited for count data. Among other things, Poisson regression does not predict negative counts.
 
@@ -226,7 +226,8 @@ d2 %>%
 	geom_jitter(aes(shape = prog, color = prog), size = 4, width = 0.2, height = 0.2) +
 	geom_smooth(method = "glm", formula = y ~ poly(x, 2), method.args = list(family = "poisson")) +
 	xlab("Work hours avg per week") +
-	ylab("Number of awards")
+	ylab("Number of awards") +
+	ggtitle("Relationship between work and num_awards")
 
 d3 <- d %>% mutate(
 	prog2 = (abs(prog - 2L) * -1L) + 1L,
@@ -234,44 +235,63 @@ d3 <- d %>% mutate(
 	prog_f = factor(prog, labels = prog_labels)
 )
 
-poiss_v2_glm <- glm(num_awards ~ math + poly(prog, 2) + poly(work, 2), family = "poisson", data = d)
-print('poiss_v2_glm:')
-summary(poiss_v2_glm)
-
-# predict
-poiss_v2_glm_preds <- predict(poiss_v2_glm, d, type = "response")
-poiss_v2_glm_preds_r <- round(poiss_v2_glm_preds)
-
 d3 %>%
 	ggplot(aes(x = prog, y = num_awards)) +
 	geom_smooth(method = "glm", formula = y ~ poly(x, 2), method.args = list(family = "poisson")) +
-	geom_jitter(aes(color = prog_f))
+	geom_jitter(aes(color = prog_f)) +
+	ggtitle("Relationship between program (original values) and num_awards")
 
 d3 %>%
 	ggplot(aes(x = prog2, y = num_awards)) +
 	geom_smooth(method = "glm", formula = y ~ x, method.args = list(family = "poisson")) +
-	geom_jitter(aes(color = prog2_f))
+	geom_jitter(aes(color = prog2_f)) +
+	ggtitle("Relationship between program (Academic vs Non-academic) and num_awards")
 
-
-# TODO: math exam score by prog
 d3 %>%
 	ggplot(aes(x = math)) +
 	geom_histogram(binwidth = 5, center = 0, fill = 'gray', color = 'white') +
 	facet_grid(cols = vars(prog_f)) +
 	ggtitle("math exam score per prog")
 
-
+# correlation matrix might be useful
 d3.cor <- d3 %>% select(-prog_f, -prog2_f) %>% cor()
 
-# TODO: transform predictors
+poiss_v2_glm <- glm(num_awards ~ math + poly(prog, 2) + poly(work, 2), family = "poisson", data = d)
+# print("poiss_v2_glm:")
+# summary(poiss_v2_glm)
 
+poiss_v3_glm <- glm(num_awards ~ math + prog2 + poly(work, 2), family = "poisson", data = d3)
+# print("poiss_v3_glm:")
+# summary(poiss_v3_glm)
 
+poiss_v4_glm <- glm(num_awards ~ math + prog2, family = "poisson", data = d3)
+# print("poiss_v4_glm:")
+# summary(poiss_v4_glm)
 
+poiss_v5_glm <- glm(num_awards ~ math + poly(work, 2), family = "poisson", data = d3)
+# print("poiss_v5_glm:")
+# summary(poiss_v5_glm)
+
+# predict
+# poiss_v2_glm_preds <- predict(poiss_v2_glm, d, type = "response")
+# poiss_v2_glm_preds_r <- round(poiss_v2_glm_preds)
+
+# compare with the simpler GLM
+print("Compare poiss_v1_glm and poiss_v2_glm and poiss_v3_glm and poiss_v4_glm and poiss_v5_glm:")
+compareGLM(poiss_v1_glm, poiss_v2_glm, poiss_v3_glm, poiss_v4_glm, poiss_v5_glm)
 ```
 
 ### Add your verbal summary here (2p):
 
-TODO
+First, we visualize various relationship among the response variable and predictors.
+
+There seems to be a relationship between program and num_awards in our data. Academic program seems to have higher number of wards received. Although the feature prog2 (1 for Academic program, 0 otherwise) is highly correlated with math score.
+
+Next, there seems to be a quadratic relationship  between work and num_awards in our data.
+
+There we fit a new model using `poiss_v3_glm <- glm(num_awards ~ math + prog2 + poly(work, 2), family = "poisson", data = d3)` where a transformed feature prog2 has value 1 for Academic program, 0 otherwise.
+
+Finally, we compare 5 different GLMs. We see that our **v3** model ("num_awards ~ math + prog2 + poly(work, 2)") is the best in terms of AIC (362.8) and BIC (382.6).
 
 
 ## Ablation study through cross-validation
@@ -309,4 +329,4 @@ summary(
 ```
 ### Add your verbal summary here (1p):
 
-TODO
+TODO: I didn't have time to finish this in time.
