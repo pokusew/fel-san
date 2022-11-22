@@ -1,0 +1,18 @@
+Assignment: a1-reg-r - Assignment 1 - Linear regression (R)
+Deadline: 1.11.2022 00:00
+Latest upload: Uploaded at 8.11.2022 03:14
+Late submission: more than 1 week > penalty 100 %
+
+Score: 0 ( manual: 6 - penalty: 6 ) ( min: 0 max: 5 )
+Evaluation:
+
+Task1
+Výborně
+
+Task2
+Super zdůvodněno
+
+Task3
+Super
+
+Z důvodu velké penalty za deadline přesouvám bonusový bod do bodů za aktivitu
