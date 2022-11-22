@@ -90,9 +90,9 @@ anova(lm(num_awards ~ math + prog + work, d))
 
 When we fitted an ordinary linear model using `lm` we got the following model:
 
-$$ num_awards = -2.536 + 0.110 * prog + 0.057 * math - 0.002 work $$
+$$ num\_awards = -2.536 + 0.110 * prog + 0.057 * math - 0.002 * work $$
 
-First, from the model summary, we can tell that **our fitted model is significantly better than the intercept-only model*** _(using F-test, based on the value of F-statistic, which is 22.16 on 3 and 196 DF, we reject the null hypothesis (p-value << 0.05) that the intercept-only model fits the data as well as our model)_.
+First, from the model summary, we can tell that **our fitted model is significantly better than the intercept-only model** _(using F-test, based on the value of F-statistic, which is 22.16 on 3 and 196 DF, we reject the null hypothesis (p-value << 0.05) that the intercept-only model fits the data as well as our model)_.
 
 Before interpreting the model, we should check whether the formal assumptions (noise normality, linearity, homoscedasticity) of OLS are met. Residual plots and the Q-Q plot are useful for this. From the "Residuals vs Fitted" plot, we can note the **homoscedasticity is most probably violated** (variance is not constant, i.e., we have heteroscedasticity): as we move to the right on the x-axis, the spread of the residuals seems to be increasing (and further, the spread is not symmetrical about the x-axis). Next, from the "Normal Q-Q" plot, we can tell that the noise **normality assumption is a bit violated**. All points should be on (or close to) the dashed line, but in our case, the points in the right part of the plot are shifted to the top. This particular shape expresses the fact that the data (their error dist.) are skewed on one side. These violations are no surprise since `num_awards` represents **count data**. Count data are characterized by heteroscedasticity and their error distribution is skewed.
 
@@ -173,7 +173,7 @@ First, we assess the applicability of Poisson regression by slicing the data at 
 We fit the model using `glm(num_awards ~ math, family = "poisson", data = d)` (Poisson regression, using only math predictor).
 
 According to our model, relationship between **math** and **num_wards** won is multiplicative.
-By increasing a math score by one point, the *num_wards* won multiplies by $e^0.086$ where 0.086 is the math coefficient from the Poisson reg. coefficients table.
+By increasing a math score by one point, the *num_wards* won multiplies by $e^{0.086}$ where 0.086 is the math coefficient from the Poisson reg. coefficients table.
 ```{r}
 num_awards_math_1 <- predict(poiss_v1_glm, newdata = data.frame(math = 45), type = "response")[[1]]
 num_awards_math_2 <- predict(poiss_v1_glm, newdata = data.frame(math = 46), type = "response")[[1]]
