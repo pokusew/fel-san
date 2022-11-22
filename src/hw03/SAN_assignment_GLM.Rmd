@@ -172,8 +172,8 @@ First, we assess the applicability of Poisson regression by slicing the data at 
 
 We fit the model using `glm(num_awards ~ math, family = "poisson", data = d)` (Poisson regression, using only math predictor).
 
-According to our model, relationship between **math** and **num_wards** won is multiplicative.
-By increasing a math score by one point, the *num_wards* won multiplies by $e^{0.086}$ where 0.086 is the math coefficient from the Poisson reg. coefficients table.
+According to our model, relationship between **math** and **num_awards** won is multiplicative.
+By increasing a math score by one point, the *num_awards* won multiplies by $e^{0.086}$ where 0.086 is the math coefficient from the Poisson reg. coefficients table.
 ```{r}
 num_awards_math_1 <- predict(poiss_v1_glm, newdata = data.frame(math = 45), type = "response")[[1]]
 num_awards_math_2 <- predict(poiss_v1_glm, newdata = data.frame(math = 46), type = "response")[[1]]
