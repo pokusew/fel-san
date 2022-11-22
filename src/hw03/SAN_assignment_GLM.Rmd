@@ -298,7 +298,78 @@ Finally, we compare all 5 different GLMs. We see that our **v3** model (`num_awa
 
 ## Ablation study through cross-validation
 Recap all the models considered previously and evaluate them through cross-validation. You can start with the most simple null model and gradually add the previously discussed improvements. See their role in terms of MAE, RMSE and other commonly used criteria. The procedure outlined below proposes to work with *train* function from *caret* package, you can only add more models to evaluate and compare.
+```{r,warning=FALSE}
+train_control <- trainControl(method = "cv", number = 10)
 
+results <- list()
+
+results[["lm model null"]] <- train(
+	x = data.frame(rep(1, nrow(d))),
+	y = d$num_awards,
+	method = "lm",
+	trControl = train_control
+)$results
+
+results[["lm model all"]] <- train(
+	x = d %>% select(prog, math, work),
+	y = d$num_awards,
+	method = "lm",
+	trControl = train_control
+)$results
+
+results[["lm model all"]] <- train(
+	x = d %>% select(math),
+	y = d$num_awards,
+	method = "lm",
+	trControl = train_control
+)$results
+
+results[["glm poisson model v1: math-only"]] <- train(
+	x = d %>% select(math),
+	y = d$num_awards,
+	trControl = train_control,
+	method = "glm",
+	family = "poisson",
+)$results
+
+results[["glm poisson model v2: math + poly(prog, 2) + poly(work, 2)"]] <- train(
+	x = d3 %>% select(math, prog, work) %>% mutate(prog = poly(prog, 2), work = poly(work, 2)),
+	y = d3$num_awards,
+	trControl = train_control,
+	method = "glm",
+	family = "poisson",
+)$results
+
+results[["glm poisson model v3: math + prog2 + poly(work, 2)"]] <- train(
+	x = d3 %>% select(math, prog2, work) %>% mutate(work = poly(work, 2)),
+	y = d3$num_awards,
+	trControl = train_control,
+	method = "glm",
+	family = "poisson",
+)$results
+
+results[["glm poisson model v4: math + prog2"]] <- train(
+	x = d3 %>% select(math, prog2),
+	y = d3$num_awards,
+	trControl = train_control,
+	method = "glm",
+	family = "poisson",
+)$results
+
+results[["glm poisson model v5: math + poly(work, 2)"]] <- train(
+	x = d3 %>% select(math, work) %>% mutate(work = poly(work, 2)),
+	y = d3$num_awards,
+	trControl = train_control,
+	method = "glm",
+	family = "poisson",
+)$results
+
+# https://stackoverflow.com/questions/16138693/rbind-multiple-data-sets
+all_results <- bind_rows(results, .id = "name")
+# rownames(all_results) <- names(results)
+
+all_results
+```
 ### Add your verbal summary here (1p):
 
-TODO: I didn't have time to finish this in time.
+We evaluated all previously discussed models using cross-validation. Our `glm poisson model v3: math + prog2 + poly(work, 2)` that we constructed in the previous part performed best during repeated evaluation (random CV folds). It has lowest both RMSE and MAE.
