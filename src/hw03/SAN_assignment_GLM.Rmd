@@ -285,13 +285,15 @@ compareGLM(poiss_v1_glm, poiss_v2_glm, poiss_v3_glm, poiss_v4_glm, poiss_v5_glm)
 
 First, we visualize various relationship among the response variable and predictors.
 
-There seems to be a relationship between program and num_awards in our data. Academic program seems to have higher number of wards received. Although the feature prog2 (1 for Academic program, 0 otherwise) is highly correlated with math score.
+There seems to be a relationship between `prog` and `num_awards` in our data. Students of _Academic_ program seem to receive higher number of awards. There does not seem to be much difference in numbers for students of the other two programs (_General_ and _Vocational_). That's our motivation for introducing a binary feature `prog2` that has value 1 when prog is Academic program and value 0 otherwise. One thing we can notice from the features' correlation matrix is that `prog2` is highly correlated with `math` score.
 
-Next, there seems to be a quadratic relationship  between work and num_awards in our data.
+Next, there seems to be a quadratic relationship between `work` and `num_awards` in our data. It seems that if students do work a little (but not too much), they tend to for receive higher number of awards. This is consistent with the notion that successful students manage to balance time between school and work.
 
-There we fit a new model using `poiss_v3_glm <- glm(num_awards ~ math + prog2 + poly(work, 2), family = "poisson", data = d3)` where a transformed feature prog2 has value 1 for Academic program, 0 otherwise.
+Based on these observations, we fit 4 new more complex GLMs using different combinations of `math` predictor (always included) and transformed `work`, `prog` and `prog2` predictors.
 
-Finally, we compare 5 different GLMs. We see that our **v3** model ("num_awards ~ math + prog2 + poly(work, 2)") is the best in terms of AIC (362.8) and BIC (382.6).
+`poiss_v3_glm <- glm(num_awards ~ math + prog2 + poly(work, 2), family = "poisson", data = d3)` where a transformed feature prog2 has value 1 for Academic program, 0 otherwise.
+
+Finally, we compare all 5 different GLMs. We see that our **v3** model (`num_awards ~ math + prog2 + poly(work, 2)`) is the best in terms of AIC (362.8) and BIC (382.6).
 
 
 ## Ablation study through cross-validation
