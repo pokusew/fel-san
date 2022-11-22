@@ -1,8 +1,8 @@
 ---
 title: "Dimensionality reduction"
-author: "your name"
-date: "17 listopadu 2019"
-output: pdf_document
+author: "Martin Endler <endlemar@fel.cvut.cz>"
+output:
+  pdf_document: default
 ---
 
 ```{r setup, include=FALSE}
@@ -50,7 +50,7 @@ Classify <- function(X, colors, kfolds = 50){
   acc <- rep(0, times = kfolds)
   #10 fold cross validation
   for(i in 1:kfolds){
-    #Segment your data by fold using the which() function 
+    #Segment your data by fold using the which() function
     testIndexes <- which(folds==i,arr.ind=TRUE)
     testData <- data[testIndexes, ]
     trainData <- data[-testIndexes, ]
@@ -71,7 +71,7 @@ mylabels <- read.csv('labels.txt', header = FALSE)
 mycolors <- read.csv('colors.csv', header = FALSE)
 ```
 
-The data is in the matrix `mydata`, cluster assignment in `mycolors` and the actual words (useful for visualization) in `mylabels`. You can plot the data by using only the first 2 dimensions. 
+The data is in the matrix `mydata`, cluster assignment in `mycolors` and the actual words (useful for visualization) in `mylabels`. You can plot the data by using only the first 2 dimensions.
 
 ```{r}
 PlotPoints(mydata[,c(1,2)], mylabels, mycolors)
@@ -84,7 +84,7 @@ PlotPoints(mydata[,c(1,2)], mylabels, mycolors)
     - Tip: Floyd-Warshall algorithm can be implemented easily here.
   * Project the geodesic distance matrix into 2D space with (Classical) Multidimensional Scaling (`cmdscale` functions in R).
   * Challenge: you may simply use PCA to do the same, but be careful to account for a proper normalization (centering) of the geodesic (kernel) matrix (see Kernel PCA for details).
-  
+
 An expected result (for *k* = 5) should look similar (not necessarily exactly the same) to following
 ![Example output](graph_iso.pdf)
 
