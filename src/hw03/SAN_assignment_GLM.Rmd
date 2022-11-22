@@ -74,8 +74,8 @@ simple_lm_preds <- predict(simple_lm, d)
 plot(
 	x = d$num_awards + runif(nrow(d), -0.2, 0.2),
 	y = simple_lm_preds,
-	xlab = 'real no. awards',
-	ylab = 'predicted no. awards',
+	xlab = "real no. awards",
+	ylab = "predicted no. awards",
 	ylim = c(-1, 6)
 )
 
@@ -133,7 +133,7 @@ d %>%
 # - we have count data and its distribution seems to be Poisson.
 # Use only math predictor.
 poiss_v1_glm <- glm(num_awards ~ math, family = "poisson", data = d)
-print('poiss_v1_glm:')
+print("poiss_v1_glm:")
 summary(poiss_v1_glm)
 
 # predict
@@ -144,8 +144,8 @@ poiss_v1_glm_preds_r <- round(poiss_v1_glm_preds)
 d %>%
 	mutate(preds = poiss_v1_glm_preds) %>%
 	ggplot(aes(x = math, y = num_awards)) +
-	geom_point(size = 1.5, color = 'gray') +
-	geom_jitter(size = 1.5, width = 0.3, height = 0.3, color = 'green') +
+	geom_point(size = 1.5, color = "gray") +
+	geom_jitter(size = 1.5, width = 0.3, height = 0.3, color = "green") +
 	# ggplot can do glm by itself
 	geom_smooth(method = "glm", formula = y ~ x, method.args = list(family = "poisson")) +
 	geom_smooth(method = "glm", formula = y ~ x, method.args = list(family = "gaussian")) +
@@ -158,10 +158,10 @@ d %>%
 # so let's fit the linear regression again, but this time with the glm() function
 # (family = "gaussian" is equivalent to the simple linear regression).
 simple_glm_full <- glm(num_awards ~ ., family = "gaussian", data = d)
-print('simple_glm_full:')
+print("simple_glm_full:")
 summary(simple_glm_full)
 simple_glm_math <- glm(num_awards ~ math, family = "gaussian", data = d)
-print('simple_glm_math:')
+print("simple_glm_math:")
 summary(simple_glm_math)
 ```
 ### Add your verbal summary here (1p):
@@ -249,7 +249,7 @@ d3 %>%
 
 d3 %>%
 	ggplot(aes(x = math)) +
-	geom_histogram(binwidth = 5, center = 0, fill = 'gray', color = 'white') +
+	geom_histogram(binwidth = 5, center = 0, fill = "gray", color = "white") +
 	facet_grid(cols = vars(prog_f)) +
 	ggtitle("math exam score per prog")
 
