@@ -90,25 +90,40 @@ PlotPoints(mydata[, c(1, 2)], mylabels, mycolors)
 An expected result (for *k* = 5) should look similar (not necessarily exactly the same) to following
 ![Example output](graph_iso.pdf)
 
-```{r isomap-impl, eval=FALSE}
-#ADD YOUR CODE HERE!
-#REMOVE eval=FALSE arguments
+```{r isomap-impl}
+k <-  5
+n <- nrow(mydata)
 
-#1.Determine the neighbors of each point (k-NN)
+# 1. Determine the neighbors of each point (k-NN)
+library(FNN)
+knn_output <- get.knn(mydata, k = k)
 
-#2.Construct a neighborhood graph.
-#Each point is connected to other if it is a K nearest neighbor.
-#Edge length equal to Euclidean distance.
+# 2. Construct a neighborhood graph (i.e., adjacency matrix with edge lengths (Euclidean distances between points))
+# Each point is connected to other if it is a K nearest neighbor.
+# Edge length equal to Euclidean distance.
+neighborhood_graph <- matrix(NA, nrow = n, ncol = n)
+stopifnot(nrow(knn_output$nn.index) == n && nrow(knn_output$nn.dist) == n)
+stopifnot(ncol(knn_output$nn.index) == k && ncol(knn_output$nn.dist) == k)
+for (v1 in seq(n)) {
+	for (i in seq(k)) {
+		v2 <- knn_output$nn.index[v1, i]
+		dist <- knn_output$nn.dist[v1, i]
+		neighborhood_graph[v1, v2] <- dist
+		neighborhood_graph[v2, v1] <- dist
+	}
+}
 
-#3.Compute shortest path between two nodes. (Floyd-Warshall algorithm)
+# 3. Compute shortest path between two nodes. (Floyd-Warshall algorithm)
+library(Rfast)
+D <- floyd(neighborhood_graph)
 
-#4.(classical) multidimensional scaling
+# 4. (classical) multidimensional scaling
 fit <- cmdscale(D, eig = TRUE, k = 2)
 PlotPoints(fit$points, mylabels, mycolors)
 ```
 
 3. **Visually compare PCA, ISOMAP and t-SNE** by plotting the word2vec data, embedded into 2D using the `PlotPoints` function. Try finding the optimal *k* value for ISOMAP's nearest neighbour.
-```{r visually-compare, eval=FALSE}
+```{r visually-compare}
 # Principal Component Analysis
 fitPCA <- prcomp(mydata, center = TRUE, scale. = TRUE)
 PlotPoints(fitPCA$x[, c(1, 2)], mylabels, mycolors)
@@ -122,7 +137,7 @@ PlotPoints(fittsne, mylabels, mycolors)
 
 
 4. **Observe the effect of dimensionality reduction on a classification algorithm**. The supporting code in a function `Classify` performs training and testing of classification trees and gives the classification accuracy (percentage of correctly classified samples) as its result. Compare the accuracy of prediction on plain data, PCA, ISOMAP and t-SNE.
-```{r accuracy, eval=FALSE}
+```{r accuracy}
 # classify ISOMAP
 accISOMAP <- Classify(as.data.frame(fit$points), mycolors$V1, 50)
 
