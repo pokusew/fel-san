@@ -60,6 +60,10 @@ Classify <- function(X, colors, kfolds = 50) {
 		pre <- predict(model, newdata = testData, y = TRUE, type = "class")
 		acc[i] <- sum(pre == testData$class) / length(testData$class)
 	}
+	# if we want to see the (last) trained classification tree as a graph,
+	# we can run the following two commands:
+	# plot(model)
+	# text(model)
 	return(acc)
 }
 ```
@@ -91,35 +95,46 @@ An expected result (for *k* = 5) should look similar (not necessarily exactly th
 ![Example output](graph_iso.pdf)
 
 ```{r isomap-impl}
-k <-  5
-n <- nrow(mydata)
+MyIsomap2D <- function(data, knn.k) {
 
-# 1. Determine the neighbors of each point (k-NN)
-library(FNN)
-knn_output <- get.knn(mydata, k = k)
+	k <- knn.k
+	n <- nrow(data)
 
-# 2. Construct a neighborhood graph (i.e., adjacency matrix with edge lengths (Euclidean distances between points))
-# Each point is connected to other if it is a K nearest neighbor.
-# Edge length equal to Euclidean distance.
-neighborhood_graph <- matrix(NA, nrow = n, ncol = n)
-stopifnot(nrow(knn_output$nn.index) == n && nrow(knn_output$nn.dist) == n)
-stopifnot(ncol(knn_output$nn.index) == k && ncol(knn_output$nn.dist) == k)
-for (v1 in seq(n)) {
-	for (i in seq(k)) {
-		v2 <- knn_output$nn.index[v1, i]
-		dist <- knn_output$nn.dist[v1, i]
-		neighborhood_graph[v1, v2] <- dist
-		neighborhood_graph[v2, v1] <- dist
+	# 1. Determine the neighbors of each point (k-NN)
+	library(FNN)
+	knn_output <- get.knn(mydata, k = k)
+
+	# 2. Construct a neighborhood graph (i.e., adjacency matrix with edge lengths (Euclidean distances between points))
+	# NA when there is no edge (so that this matrix is compativle with Rfast v2.0.6 Rfast::floyd
+	# Each point is connected to other if it is a K nearest neighbor.
+	# Edge length equal to Euclidean distance.
+	neighborhood_graph <- matrix(NA, nrow = n, ncol = n)
+	stopifnot(nrow(knn_output$nn.index) == n && nrow(knn_output$nn.dist) == n)
+	stopifnot(ncol(knn_output$nn.index) == k && ncol(knn_output$nn.dist) == k)
+	for (v1 in seq(n)) {
+		for (i in seq(k)) {
+			v2 <- knn_output$nn.index[v1, i]
+			dist <- knn_output$nn.dist[v1, i]
+			neighborhood_graph[v1, v2] <- dist
+			neighborhood_graph[v2, v1] <- dist
+		}
 	}
+
+	# 3. Compute shortest path between two nodes. (Floyd-Warshall algorithm)
+	library(Rfast)
+	D <- floyd(neighborhood_graph)
+
+	# 4. (classical) multidimensional scaling
+	fit <- cmdscale(D, eig = TRUE, k = 2)
+
+	return(fit)
+
 }
+```
 
-# 3. Compute shortest path between two nodes. (Floyd-Warshall algorithm)
-library(Rfast)
-D <- floyd(neighborhood_graph)
-
-# 4. (classical) multidimensional scaling
-fit <- cmdscale(D, eig = TRUE, k = 2)
-PlotPoints(fit$points, mylabels, mycolors)
+```{r isomap-fit}
+fitISOMAP <- MyIsomap2D(data = mydata, knn.k = 5)
+PlotPoints(fitISOMAP$points, mylabels, mycolors)
 ```
 
 3. **Visually compare PCA, ISOMAP and t-SNE** by plotting the word2vec data, embedded into 2D using the `PlotPoints` function. Try finding the optimal *k* value for ISOMAP's nearest neighbour.
@@ -135,21 +150,84 @@ fittsne <- tsne(mydata, k = 2)
 PlotPoints(fittsne, mylabels, mycolors)
 ```
 
+All methods were able to _somehow_ separate the given words and bring members of the similar synonym classes closer together.
+
+One thing we can note is that some words are problematic for all the methods. These include especially ambivalent words from the _black_ synonym class.
+
+**The results provided by Isomap seem to be visually the best.** Synonym classes that have significantly different meanings and connotations are pushed far apart.
+
+Second to the best are results provided by t-SNE. Some synonym classes are quite nicely separated (such as _blue_ and _green_ and _gray_).
+
+Finally, PCA does not provide such good results. A lot of classes are mixed together. This will make the classification much more difficult.
+
+
+Next, we try finding the optimal *k* value for ISOMAP's nearest neighbor experimentally. We run our `MyIsomap2D` with different `knn.k` values ranging from 3 to 21. For each k, we run CV and calculate mean ACC. Finally, we plot the results.
+```{r looking-for-best-k}
+k_data <- data.frame(
+	k = 3:21, # try k from 3 to 21
+	acc = 0 # initialize ACC to zero for all k
+)
+
+for (i in seq(dim(k_data)[1])) {
+	k <- k_data$k[i]
+	fit <- MyIsomap2D(data = mydata, knn.k = k)
+	k_data$acc[i] <- mean(Classify(as.data.frame(fit$points), mycolors$V1, 50))
+}
+
+library(ggplot2)
+ggplot(k_data, aes(x = k, y = acc)) +
+	geom_line()
+```
+
+From the obtained results it seems that **k = 5** is the optimal value that produces the highest mean ACC.
+
+Moreover, when we try the same process visually (observing the `PlotPoints` output for different **k**), we can also see that **k = 5** yields the best result visually.
+
 
 4. **Observe the effect of dimensionality reduction on a classification algorithm**. The supporting code in a function `Classify` performs training and testing of classification trees and gives the classification accuracy (percentage of correctly classified samples) as its result. Compare the accuracy of prediction on plain data, PCA, ISOMAP and t-SNE.
 ```{r accuracy}
-# classify ISOMAP
-accISOMAP <- Classify(as.data.frame(fit$points), mycolors$V1, 50)
+# classify plain data (using all original 300 dimensions)
+accPlain <- Classify(mydata, mycolors$V1, 50)
 
-# classify PCA
-accPCA <- Classify(as.data.frame(fitPCA$x), mycolors$V1, 50)
+# classify ISOMAP dim-reduced data (2 dimensions)
+accISOMAP <- Classify(as.data.frame(fitISOMAP$points), mycolors$V1, 50)
 
-# classify t-SNE
+# classify PCA dim-reduced data (2 dimensions)
+
+# Note:
+#   In the **original code (in the provided template)**, ALL dimensions of `fitPCA$x` were used as input for `Classify`
+#   instead of just the 2 with the highest proportion of variance like it was done when comparing methods visually
+#   in the previous step. We want to observe the effect of dimensionality reduction on a classification algorithm
+#   when using different methods, so it only makes sense to consider the same number of dimensions.
+#   Additionally, dimension of `fitPCA$x` is not 300 but actually just 165, because of how PCA works
+#   (there cannot be more principal components than the number of samples).
+accPCA <- Classify(as.data.frame(fitPCA$x[, c(1, 2)]), mycolors$V1, 50)
+accPCA165 <- Classify(as.data.frame(fitPCA$x), mycolors$V1, 50)
+
+# classify t-SNE dim-reduced data (2 dimensions)
 accTSNE <- Classify(as.data.frame(fittsne), mycolors$V1, 50)
 
-# PLOT results
-print(paste("ISOMAP ACC:", mean(accISOMAP)))
-print(paste("PCA ACC:", mean(accPCA)))
-print(paste("t-SNE ACC:", mean(accTSNE)))
+# print results
+print(paste("plain 300D ACC:", mean(accPlain)))
+print(paste("ISOMAP 2D ACC:", mean(accISOMAP)))
+print(paste("PCA 2D ACC:", mean(accPCA)))
+print(paste("PCA 165D ACC:", mean(accPCA165)))
+print(paste("t-SNE 2D ACC:", mean(accTSNE)))
 ```
 
+From the mean accuracy values that we obtained trough cross-validation, we see that the classification model trained on the 2D data performed by far the best (mean accuracy of 74.8 %).
+
+We can also clearly see the advantage of dimensionality reduction. The classification model trained on the data with all 300 dimensions (`plain 300D`) performed worse. This was expected as with high-dimensionality data we face the curse of dimensionality. We would need much more samples in order to be able to train a good classification model.
+
+Next, the model trained on t-SNE 2D data has 63.3 % mean accuracy.
+
+Lastly, model trained on PCA 2D data has 57.0 % mean accuracy.
+
+
+**Note:**
+In the **original code (in the provided template)**, **ALL** dimensions of `fitPCA$x` were used as input for `Classify`
+instead of just the 2 with the highest proportion of variance like it was done when comparing methods visually
+in the previous step. We want to observe the effect of dimensionality reduction on a classification algorithm
+when using different methods, so it only makes sense to consider the same number of dimensions.
+Additionally, dimension of `fitPCA$x` is not 300 but actually just 165, because of how PCA works
+(there cannot be more principal components than the number of samples).
