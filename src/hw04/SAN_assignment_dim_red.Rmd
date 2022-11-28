@@ -215,9 +215,9 @@ print(paste("PCA 165D ACC:", mean(accPCA165)))
 print(paste("t-SNE 2D ACC:", mean(accTSNE)))
 ```
 
-From the mean accuracy values that we obtained trough cross-validation, we see that the classification model trained on the 2D data performed by far the best (mean accuracy of 74.8 %).
+From the mean accuracy values that we obtained trough cross-validation, we see that the classification model trained on the **ISOMAP 2D data performed by far the best (mean accuracy of 74.8 %)**.
 
-We can also clearly see the advantage of dimensionality reduction. The classification model trained on the data with all 300 dimensions (`plain 300D`) performed worse. This was expected as with high-dimensionality data we face the curse of dimensionality. We would need much more samples in order to be able to train a good classification model.
+We can also clearly see the advantage of dimensionality reduction. The classification model trained on the data with all 300 dimensions (`plain 300D`) performed worst. This was expected as with high-dimensionality data we face the curse of dimensionality. We would need much more samples in order to be able to train a good classification model.
 
 Next, the model trained on t-SNE 2D data has 63.3 % mean accuracy.
 
