@@ -42,3 +42,6 @@ captures
 
 # Python cache
 __pycache__
+
+# data
+/src/cv11/problems/
