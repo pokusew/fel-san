@@ -3,7 +3,11 @@ Deadline: 15.11.2022 00:00 - deadline expired
 Latest upload: Uploaded at 21.11.2022 23:59
 Late submission: ...
 
-Score: ...
+Score: 3 ( manual: 5 - penalty: 2 ) ( min: 0 max: 5 )
 Evaluation:
 
-...
+• Výborně analýza OLS
+• Výborně srovnání simple GLM a lm, interpretace koeficientu také správně
+• Správně odhalena polynomiální závislost. Obecně se jinak s kategorickými proměnnými pracuje tak, že se rozdělí do dummy variables
+
+Jinak super grafy
