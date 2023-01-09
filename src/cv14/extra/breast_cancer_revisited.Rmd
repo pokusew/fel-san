@@ -1,0 +1,89 @@
+---
+title: "Kmeans and GMM"
+output: html_document
+---
+
+```{r}
+library(ggplot2)
+library(ClusterR)
+library(tidyverse)
+
+data <- read.csv("breast_cancer.csv")
+data <- data %>% 
+  dplyr::select(-id, -X) # remove unnecessary columns
+
+data_numeric <- data %>% 
+  dplyr::select(-diagnosis)
+```
+
+```{r}
+# Perform PCA and keep the first 2 components
+pca_res <- prcomp(data_numeric)
+
+data_pca <- as.data.frame(pca_res$x) %>%
+  dplyr::select(PC1, PC2)
+```
+
+# CLUSTERING
+```{r}
+# Remember the data have the 'diagnosis' column removed. So this is what you are working with
+plot(data_pca)
+# as opposed to
+plot(data_pca, col=as.factor(data$diagnosis))
+
+# Can unsupervised methods uncover the structure?
+data_pca <- center_scale(data_pca)
+
+# Cluster the data using GMMs
+gmm <- GMM(data_pca,
+           gaussian_comps = 2)
+
+# Cluster the data using Kmeans
+kmeans_res <- kmeans(data_pca, 2)
+
+# Extract the centroids for plotting (add manually a label column)
+centroids_gmm <- gmm$centroids %>% 
+  as.data.frame() %>%
+  mutate(class=c('gmm_centroid', 'gmm_centroid'))
+
+centroids_kmeans <- kmeans_res$centers %>%
+  as.data.frame() %>%
+  mutate(class=c('km_centroid', 'km_centroid'))
+
+# Compare the centroids w.r.t. the true diagnosis
+data_pca %>%
+  as.data.frame() %>%
+  mutate(class = data$diagnosis) %>%
+  ggplot(aes(x=V1, y=V2, col=class)) +
+  geom_point(alpha=0.3) +
+  geom_point(data = centroids_kmeans, aes(x=V1, y=V2), size=4, alpha = 1) +
+  geom_point(data = centroids_gmm, aes(x=V1, y=V2), size=4, alpha = 1)
+```
+
+# Visualizing GMM
+```{r}
+# Extract covariances of the Gaussian mixtures
+# Thir diagonals are stored in the slot gmm$covariance_matrices
+clust1_cov <- matrix(0, nrow = 2, ncol = 2)
+clust2_cov <- matrix(0, nrow = 2, ncol = 2)
+
+diag(clust1_cov) <- gmm$covariance_matrices[1, ]
+diag(clust2_cov) <- gmm$covariance_matrices[2, ]
+
+# Generate samples of the Gaussians for plotting purposes
+clust1_smpl <- MASS::mvrnorm(n=200, mu=gmm$centroids[1,], Sigma = clust1_cov) %>%
+  as.data.frame()
+clust2_smpl <- MASS::mvrnorm(n=200, mu=gmm$centroids[2,], Sigma = clust2_cov) %>%
+  as.data.frame()
+
+# Plot the contours of the Guassians
+data_pca %>%
+  as.data.frame() %>%
+  mutate(class = data$diagnosis) %>%
+  ggplot(aes(x=V1, y=V2, col=class)) +
+  geom_point(alpha=0.4) +
+  geom_density_2d(data=clust1_smpl,  aes(x = V1, y = V2), bins=15, color='blue') +
+  geom_density_2d(data=clust2_smpl,  aes(x = V1, y = V2), bins=15, color='red') +
+  theme_minimal()
+
+```

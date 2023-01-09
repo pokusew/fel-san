@@ -1,0 +1,441 @@
+---
+title: "Introduction to spectral clustering"
+output:
+  html_document:
+    df_print: paged
+---
+
+### Overview
+
+This notebook deals with clustering problems that cannot be satisfactorily solved with basic clustering algorithms. In this lab we will demonstrate strengths of spectral clustering in these tasks. Further, you will play with your own detailed implementation of spectral clustering.
+
+### Load libraries, define a function for easy access to input files
+
+*LoadDataset* reads the input file and visualizes it.
+
+```{r prepare, echo=FALSE, message=FALSE, warning=FALSE, paged.print=FALSE}
+library(dplyr)
+library(ggplot2)
+# install.packages("kernlab")
+library(kernlab) # spectral clustering
+library(dbscan) # density-based clustering
+
+LoadDataset <- function(path, title="Unknown dataset", csv = FALSE){
+  if(csv){
+    X <- read.csv(path, header = FALSE)
+  }
+  else{
+    X <- read.table(path) 
+  }
+  names(X) <- c("x", "y", "label")
+  plot(X$x, X$y, col=X$label, xlab = "x", ylab = "y", main = title)
+  return(X)
+}
+```
+
+### Analyze the spirals dataset
+
+The spirals dataset is already known from the lecture on spectral clustering, it is available in R kernlab too. Obviously, k-means works with assumptions that are not met here (round clusters), and it fails. Single-linkage hierarchical clustering could work here in theory, however, it is not sufficiently robust. As soon as the nearest pair of points from distinct helices gets closer than the pair of two most distant points in the same helix, the clustering fails. The same holds for DBSCAN, it could work, but the right parametrization is very difficult to be found. On the contrary, spectral clustering works perfectly.  
+
+```{r}
+spirals <- LoadDataset("spirals.txt", "The spirals dataset, the ideal clustering")
+
+# --------------------- KMEANS CLUSTERING ---------------------
+# Perform k-means clustering. Try different number of clusters
+# What is setting "nstart" good for?
+km_out <- kmeans(
+  x = ____, 
+  centers = ____, 
+  nstart = 10
+)
+
+# Access the cluster assignment vector from the output
+km_clsts <-  _____
+
+plot(
+  spirals$x,
+  spirals$y,
+  col = km_clsts,
+  main = "The spirals dataset, k-means outcome",
+  xlab = "x",
+  ylab = "y"
+)
+```
+
+```{r}
+# ----------------- HIERARCHICAL CLUSTERING ---------------------
+# This method needs to know pairwise distances between points (distance matrix)
+# Find a function that does that for you
+dist_m <- ____(spirals[, c(1, 2)])
+
+# Perform hierarchical clustering. Try different methods ("single", "complete", "average")
+# Question> What linkage method would in theory be the most suited for the spirals dataset?
+hc_tree <- hclust(
+  dist_m, 
+  method = ____
+)
+
+# Cut the tree to obtain clusters. See documentation of the function for the usage
+# What does the function return?
+hc_clsts <- cutree(
+  tree = hc_tree, 
+  k = ____
+)
+
+# Plot the results. Try to play with the above steps to achieve the best result
+plot(
+  spirals$x,
+  spirals$y,
+  col = hc_clsts,
+  main = sprintf("The spirals dataset, %s linkage outcome", hc_tree$method),
+  xlab = "x",
+  ylab = "y"
+)
+
+# Want to find the best parametrization quicker? Try to look at the dendogram!
+plot(hc_tree)
+```
+
+```{r}
+# ------------------- DBSCAN CLUSTERING ---------------------
+# Perform DBSCAN clustering
+dbscan_out <- dbscan(spirals[, c(1, 2)], eps = ___, minPts = ___)
+
+# Don't know what values to fill in? 
+# "eps" and "minPts" parameters are linked together. 
+# Suitable values can be found by looking at a so-called k-NN distplot. 
+# Choose a value of "k"/"minPts" and the plot may reveal a good option for the "eps" parameter. 
+# Aim for the knee!
+kNNdistplot(spirals[, c(1, 2)], k = ___) 
+# Question: What is this plot showing and why do we take the knee value?
+
+# Again, access the cluster assignment from the "dbscan_out"
+dbs_clsts <- ____
+
+plot(
+  spirals$x,
+  spirals$y,
+  col = dbs_clsts,
+  main = "The spirals dataset, dbscan outcome",
+  xlab = "x",
+  ylab = "y"
+)
+
+# Can you achieve a perfect separation? Compare with the plots from Hierarchical clustering
+```
+
+```{r}
+# ------------------- SPECTRAL CLUSTERING ---------------------
+# Perform library implementation of spectral clustering
+sc <- specc(as.matrix(spirals[, c(1, 2)]), centers = ____)
+
+plot(
+  spirals$x,
+  spirals$y,
+  col = sc,
+  main = "The spirals dataset, spectral clustering",
+  xlab = "x",
+  ylab = "y"
+)
+```
+
+### Analyze the two moons dataset
+
+The two moons dataset will be analyzed next, it is also known as the Jain's toy dataset. K-means assumptions are not met again, the algorithm fails. Single-linkage hierarchical clustering fails for the same reason as in the previous case. DBSCAN has difficulties to cope with clusters of different density. Spectral clustering works perfectly again.  
+
+```{r}
+jain <- LoadDataset("jain.txt", "The jain dataset, the ideal clustering")
+jain <- jain %>%
+  select(-label)
+
+km_out <- kmeans(jain, 2, nstart = 10)
+plot(
+  jain$x, 
+  jain$y, 
+  col=_____, 
+  main = "The jain dataset, k-means outcome", 
+  xlab = "x", ylab = "y"
+)
+
+hc_out <- hclust(dist(jain), method = ____)
+plot(
+  jain$x, 
+  jain$y, 
+  col=_____, 
+  main = sprintf("The jain dataset, %s linkage outcome", hc_out$method),
+  xlab = "x", 
+  ylab = "y"
+)
+
+kNNdistplot(jain, k = ___)
+dbscan <- dbscan(jain, eps = ___, minPts = ___)
+plot(
+  jain$x, 
+  jain$y, 
+  col = dbscan$cluster, 
+  main = "The jain dataset, dbscan outcome", 
+  xlab = "x", 
+  ylab = "y"
+)
+
+sc <- specc(as.matrix(jain), centers = 2)
+plot(
+  jain$x, 
+  jain$y, 
+  col = sc, 
+  main = "The jain dataset, spectral clustering", 
+  xlab = "x", 
+  ylab = "y"
+)
+```
+
+### A more detailed spectral clustering implementation
+
+The individual components of the spectral clustering algorithm can be seen below. Play with the settings and try to understand their role in the outcome of the algorithm.
+
+```{r}
+####################
+# HELPER FUNCTIONS #
+####################
+# Just run this block to define the functions. You can look at them later on
+
+CalcSimMatrix <- function(points, sigma = 0.5) {
+  D <- dist(points, method = "euclidean") #Euclidean distance matrix
+  D <- as.matrix(D)
+  D <- D ^ 2
+  S <- exp(-D / (2 * sigma ^ 2)) #Gaussian similarity function
+  return(S)
+}
+
+BuildEpsilonGraph <- function(D, e = 0.2) {
+  #set all items to zero that are smaller than epsilon
+  D <- as.matrix(D)
+  diag(D) <- rep(0, times = nrow(D))
+  D[D < e] <- 0
+  return(D)
+}
+
+BuildDirectedKNNGraph <- function(D, k = 5) {
+  #directed graph
+  D <- as.matrix(D)
+  diag(D) <- rep(0, times = nrow(D))
+  dSorted <-
+    apply(D, MARGIN = 2, function(x) {
+      order(x, decreasing = TRUE)
+    })
+  for (i in 1:nrow(D)) {
+    D[i, dSorted[(k + 2):nrow(dSorted), i]] <- 0
+  }
+  return(D)
+}
+
+BuildUndirectedKNNGraph <- function(D, k = 5, mutual = FALSE) {
+  #directed graph
+  D <- BuildDirectedKNNGraph(D, k)
+  if (mutual) {
+    D <- pmin(D, t(D))
+  }
+  else
+  {
+    D <- pmax(D, t(D))
+  }
+  return(D)
+}
+
+CalcLaplacian <- function(W, normalized = FALSE) {
+  #degree matrix - number of neighbours for each item in diagonal
+  degree <- rowSums(W)
+  degreeMatrix <- diag(degree)
+  #L <- D-W
+  L <- degreeMatrix - W
+  if (normalized == FALSE) {
+    #return unnormalized version o Laplacian
+    return(L)
+  }
+  else{
+    #return normalized version o Laplacian
+    #for diagonal matrix each diagonal element is divided 1/d
+    diag(degreeMatrix) <- 1 / (diag(degreeMatrix) ^ 0.5)
+    return(degreeMatrix %*% L %*% degreeMatrix)
+  }
+}
+
+PlotConnectedGraph <- function(data, dist) {
+  plot(
+    data$x,
+    data$y,
+    col = data$label,
+    xlab = "x",
+    ylab = "y",
+    main = "Connectivity graph"
+  )
+  indecesx <- which(dist > 0, arr.ind = TRUE)
+  for (i in 1:nrow(indecesx)) {
+    lines(data[indecesx[i, ], ])
+  }
+}
+
+# Get the accuracy
+Purity <- function(clusters, labels) {
+  #clusters - vector of values determining the class
+  #labels
+  correct <- max(sum(clusters == labels), sum(clusters != labels))
+  return(correct / length(clusters))
+}
+```
+
+
+```{r}
+################################
+# SPECTRAL CLUSTERING WORKFLOW #
+################################
+
+# STEP 1. - Calculate the similarity matrix
+d <- CalcSimMatrix(spirals[, 1:2], sigma = 0.15) # 0.35
+
+# ----------------------------------------------------------------------------------
+# STEP 2. - Edit the full similarity matrix to get a "reasonable" connectivity graph
+# Try different versions and parameters (see options below)
+# All these methods should lead to a successful clustering with correct parameters
+
+# 2.a) Epsilon Graph
+#similarityGraph <- BuildEpsilonGraph(d, e = 0.3)
+
+# 2.b) Directed k-NN Graph
+#similarityGraph <- BuildDirectedKNNGraph(d, k = 6)
+
+# 2.c) Undirected nonmutual/mutual k-NN Graph
+similarityGraph <- BuildUndirectedKNNGraph(d, k = 7, mutual = F)
+
+# See, how your choice affected the connectivity graph. 
+# The graph doesn't need to be "perfect" for the subsequent steps to work
+PlotConnectedGraph(spirals, similarityGraph)
+# ----------------------------------------------------------------------------------
+
+# STEP 3. - Calculate the Laplacian matrix
+laplacian <- CalcLaplacian(similarityGraph)
+
+# ----------------------------------------------------------------------------------
+
+# STEP 4. Compute eigenvectors of the Laplacian graph
+eigenVectors <- eigen(laplacian)
+# Get the last k eigen-vectors (they are sorted and correspond to the k smallest eigen-values)
+# These eigenvectors are your new coordinates, i.e. embeddings
+# Here we use k=4 (resulting in 4D data), but feel free to change the number
+finalEigenvector <- eigenVectors$vectors[, 297:300]
+
+# Look at your new space (pick the last 2 dimensions for plotting)
+embed_space <- finalEigenvector[, -2:-1] %>% as.data.frame()
+embed_space %>% ggplot(aes(x=V1, y=V2)) + geom_point()
+# If there are fewer points than you expect, try this jitter plot 
+embed_space %>% ggplot(aes(x=V1, y=V2)) + geom_jitter(width = 0.005, height = 0.05)
+# ----------------------------------------------------------------------------------
+
+# STEP 5. - Perform K-means using the eigenvectors as coordinates
+resSpectral <- kmeans(
+  finalEigenvector,
+  centers = 2,
+  nstart = 10
+)
+
+clusters <- resSpectral$cluster
+
+# Plot the resulting clustering
+plot(
+  spirals$x,
+  spirals$y,
+  col = resSpectral$cluster,
+  main = "Spiral dataset - spectral clustering",
+  xlab = "x",
+  ylab = "y"
+)
+```
+
+
+```{r}
+# Clusters can be also obtained via the 2nd "smallest" eigenvector (only 2-partition). 
+# The 'eigenVectors' variable contains eigen-vectors sorted in the descending order. 
+# Create the partitioning based the values of the 2nd smallest eigen vector
+eigenvec2nd <- finalEigenvector[, ncol(finalEigenvector) - 1]
+
+# Note the values of the 2nd eigenvector. Does the plot tell something about about the structure?
+plot(eigenvec2nd, col=spirals$label)
+clusters <- ____
+
+plot(
+  spirals$x,
+  spirals$y,
+  col = as.numeric(clusters) + 1,
+  main = "Spiral dataset - spectral clustering",
+  xlab = "x",
+  ylab = "y"
+)
+
+# The 2nd eigenvector alone could to a large extent replicate the correct clustering.
+# For the desired output though, we need also contributions from other eigenvectors.
+```
+
+### Some other tricks: ensemble clustering
+
+The ensemble clustering proposed in the lecture: 
+```{r}
+ensemble_clustering <- function(dataset, k_start, k_end, n_clust, hc_method) {
+  k_sample <- sample(
+    seq(k_start, k_end), 
+    size = n_clusts, 
+    replace = T
+  )
+  
+  km_ens <- sapply(
+    k_sample,
+    function(x) kmeans(dataset[, c(1, 2)], x)$cluster
+  )
+  
+  coassoc_mat <-
+    sapply(1:nrow(dataset), function(x)
+      sapply(1:nrow(dataset), function (y) {
+        sum(km_ens[x, ] == km_ens[y, ]) / n_clust
+      }))
+  
+  hc_ens <- hclust(as.dist(1 - coassoc_mat), method = hc_method)
+  plot(hc_ens)
+  
+  return(cutree(hc_ens, 2))
+}
+
+# -------------- JAIN DATASET ------------
+k_start <- ___
+k_end <- ___
+n_clusts <- 600
+hc_consensus_method <- ___ # average/single/complete
+
+
+clusters <- ensemble_clustering(jain, k_start, k_end, n_clusts, hc_consensus_method)
+
+plot(
+  jain$x,
+  jain$y,
+  col = clusters,
+  main = "The Jain ensemble clustering",
+  xlab = "x",
+  ylab = "y"
+)
+  
+# -------------- SPIRALS DATASET ------------
+k_start <- ___
+k_end <- ___
+n_clusts <- 400
+hc_consensus_method <- ___ # average/single/complete
+
+clusters <- ensemble_clustering(spirals, k_start, k_end, n_clusts, hc_consensus_method)
+
+plot(
+  spirals$x,
+  spirals$y,
+  col = clusters,
+  main = "The Spirals ensemble clustering",
+  xlab = "x",
+  ylab = "y"
+)
+  
+```
