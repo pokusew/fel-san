@@ -2,7 +2,6 @@
 #'
 #' Trains GMM model using EM algorithm.
 #'
-#' @param x matrix (num_sample_points x dim) of data points where the probability density function should be evaluated
 #' @param training_data training data (num_training_points x dim)
 #' @param num_components number of Gaussian components (hyperparameter)
 #'
@@ -12,7 +11,7 @@
 #'
 #' @return model, a list with num_components, alphas, means, cov_matrices
 #'
-gmm_em_train <- function(x, training_data, num_components, num_steps = 60) {
+gmm_em_train <- function(training_data, num_components, num_steps = 60) {
 
   d <- dim(training_data)[2]
   num_training_points <- dim(training_data)[1]
