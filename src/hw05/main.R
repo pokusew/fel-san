@@ -2,6 +2,14 @@
 # see https://www.tidyverse.org/packages/
 library(tidyverse)
 
+# AUC library for calculating the area under ROC curve
+# see https://en.wikipedia.org/wiki/Receiver_operating_characteristic
+# see https://www.rdocumentation.org/packages/AUC/versions/0.3.2
+library(AUC)
+
+source("parzen.R")
+source("mog.R")
+
 datasets <- list.dirs(path = "data", full.names = FALSE, recursive = FALSE)
 
 dataset <- "magic-telescope"
@@ -31,20 +39,40 @@ rownames(data_normal) <- paste0("N", rownames(data_normal))
 #     - 100 % to the testing set
 
 # randomly shuffle the normal data
-data_normal_shuffled <- data_normal[sample(nrow(data_normal)), ]
+data_normal_shuffled <- data_normal[sample(nrow(data_normal)),]
 # randomly split the normal data into 4 groups (each contains roughly 25 %)
 data_normal_splits <- cut(seq_len(nrow(data_normal)), breaks = 4, labels = FALSE)
 
 # training set for fitting the models (50 % of normal samples)
 data_normal_training_idxs <- which(data_normal_splits <= 2, arr.ind = TRUE)
-data_training <- data_normal_shuffled[data_normal_training_idxs, ]
+data_training <- data_normal_shuffled[data_normal_training_idxs,]
 
 # validation set for selecting hyper-parameters (25 % of normal samples)
 data_normal_validation_idxs <- which(data_normal_splits == 3, arr.ind = TRUE)
-data_validation <- data_normal_shuffled[data_normal_validation_idxs, ]
+data_validation <- data_normal_shuffled[data_normal_validation_idxs,]
 
 # testing set for evaluation (25 % of normal samples + 100 % of anomalous samples)
 data_normal_testing_idxs <- which(data_normal_splits == 4, arr.ind = TRUE)
-data_testing_normal <- data_normal_shuffled[data_normal_testing_idxs, ]
+data_testing_normal <- data_normal_shuffled[data_normal_testing_idxs,]
 # note: we don't need to shuffle the anomalous data or mix up them with the selected part of the normal data
 data_testing <- rbind(data_testing_normal, data_anomalous)
+
+# print("parzen running ...")
+# parzen_h <- data.frame(
+#   h = seq(from = 0.01, to = 10, length.out = 100),
+#   likelihood = rep(x = 0, times = 100)
+# )
+# for (i in seq_len(100)) {
+#   h <- parzen_h$h[i]
+#   print(str_glue("h={h} ..."))
+#   p <- parzen(x = as.matrix(data_testing), training_data = as.matrix(data_training), kernel_bandwidth = h)
+#   l <- sum(log(p))
+#   parzen_h$likelihood[i] <- l
+# }
+
+# parzen_h %>%
+#   ggplot(aes(x = h, y = likelihood)) +
+#   geom_line()
+
+# parzen_roc <- roc(predictions, labels)
+# parzen_auc <- auc(parzen_roc, min = 0, max = 1)

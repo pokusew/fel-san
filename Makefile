@@ -47,8 +47,8 @@ hw05: $(EXPORT_DIR)
 	$(ZIP) -j $(EXPORT_DIR)/$@-$(HW_SUFFIX)-brute.zip \
 		src/hw05/parzen.R \
 		src/hw05/mog.R \
-		src/hw05/test.R \
-		src/hw05/main.R
+		src/hw05/main.R \
+		src/hw05/README.md
 
 .PHONY: midterm
 midterm: $(EXPORT_DIR)
