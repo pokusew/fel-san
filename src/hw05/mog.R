@@ -89,7 +89,7 @@ gmm_estimate <- function(x, model) {
 
   num_samples <- dim(x)[1]
 
-  # TODO: asset that the x dimensions match the given model
+  # TODO: assert that the x dimensions match the given model
 
   estimates <- rep(0, times = num_samples)
 
@@ -103,7 +103,7 @@ gmm_estimate <- function(x, model) {
 
   }
 
-  return (estimates)
+  return(estimates)
 
 }
 
