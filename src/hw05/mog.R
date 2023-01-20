@@ -13,8 +13,8 @@
 #'
 gmm_em_train <- function(training_data, num_components, num_steps = 60) {
 
-  d <- dim(training_data)[2]
-  num_training_points <- dim(training_data)[1]
+  num_training_points <- nrow(training_data)
+  d <- ncol(training_data)
 
   # initilization step
   c_alphas <- rep(1 / num_components, times = num_components)
@@ -87,7 +87,7 @@ gmm_em_train <- function(training_data, num_components, num_steps = 60) {
 #'
 gmm_estimate <- function(x, model) {
 
-  num_samples <- dim(x)[1]
+  num_samples <- nrow(x)
 
   # TODO: assert that the x dimensions match the given model
 
@@ -116,7 +116,7 @@ gmm_estimate <- function(x, model) {
 #' @return vector (of size num_sample_points) of densities evaluated at values given by x
 #'
 gmm <- function(x, mean, cov_matrix) {
-  d <- dim(x)[2]
+  d <- ncol(x)
   cov_matrix_det <- det(cov_matrix)
   x_minus_mean <- sweep(x, MARGIN = 2, mean)
   denominator <- sqrt(((2 * pi)^d) * cov_matrix_det)
@@ -130,11 +130,11 @@ gmm <- function(x, mean, cov_matrix) {
 }
 
 saturate_cov_matrices <- function(matrices) {
-  for (k in seq_len(dim(matrices)[1])) {
+  for (k in seq_len(nrow(matrices))) {
     m <- matrices[[k]]
     m_det <- det(m)
     if (m_det < 10e-10) {
-      matrices[[k]] <- m + diag(10e-5, nrow = dim(m)[1], ncol = dim(m)[2])
+      matrices[[k]] <- m + diag(10e-5, nrow = nrow(m), ncol = ncol(m))
     }
   }
   return(matrices)
