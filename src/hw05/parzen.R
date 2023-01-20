@@ -20,6 +20,9 @@ parzen <- function(x, training_data, kernel_bandwidth) {
     # compute the scaled kernels for each training point
     # (h denotes the kernel_bandwidth)
     # scaled kernel K_h(x) = 1/h * K(x/h) where K is the kernel
+    # explicit formula for PDF of N(0, h^2):
+    # K_h <- exp((x_minus_traning_data / kernel_bandwidth)^2 / (-2)) / (kernel_bandwidth * sqrt(2 * pi))
+    # using dnorm for PDF of N(0, h^2):
     K_h <- dnorm(x_minus_traning_data, mean = 0, sd = kernel_bandwidth)
     # sum the kernels from each training point and divide by number of the training points
     p[i] <- mean(K_h)
