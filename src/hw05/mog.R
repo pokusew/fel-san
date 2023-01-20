@@ -2,8 +2,8 @@
 #'
 #' Trains GMM model using EM algorithm.
 #'
-#' @param training_data training data (num_training_points x dim)
-#' @param num_components number of Gaussian components (hyperparameter)
+#' @param training_data matrix of type (num_training_points x dim) with the training data
+#' @param num_components number of Gaussian components, a positive scalar integer, (hyperparameter)
 #'
 #' @seealso https://people.csail.mit.edu/rameshvs/content/gmm-em.pdf
 #' @seealso https://en.wikipedia.org/wiki/Mixture_model#Multivariate_Gaussian_mixture_model
@@ -111,7 +111,7 @@ gmm_estimate <- function(x, model) {
 #'
 #' @param x matrix (num_sample_points x dim) of data points where the probability density function should be evaluated
 #' @param mean vector of size dim
-#' @param cov_matrix convariance matrix (dim x dim)
+#' @param cov_matrix covariance matrix (dim x dim)
 #'
 #' @return vector (of size num_sample_points) of densities evaluated at values given by x
 #'
