@@ -91,7 +91,7 @@ gmm_estimate <- function(x, model) {
 
   # TODO: asset that the x dimensions match the given model
 
-  estimates <- c(0, times = num_samples)
+  estimates <- rep(0, times = num_samples)
 
   for (k in seq_len(model$num_components)) {
 
