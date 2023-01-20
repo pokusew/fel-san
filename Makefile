@@ -42,6 +42,14 @@ hw04: $(EXPORT_DIR)
 		src/hw04/SAN_assignment_dim_red.html \
 		src/hw04/SAN_assignment_dim_red.pdf
 
+.PHONY: hw05
+hw05: $(EXPORT_DIR)
+	$(ZIP) -j $(EXPORT_DIR)/$@-$(HW_SUFFIX)-brute.zip \
+		src/hw05/parzen.R \
+		src/hw05/mog.R \
+		src/hw05/test.R \
+		src/hw05/main.R
+
 .PHONY: midterm
 midterm: $(EXPORT_DIR)
 	$(ZIP) -j $(EXPORT_DIR)/$@-$(HW_SUFFIX)-brute.zip \
