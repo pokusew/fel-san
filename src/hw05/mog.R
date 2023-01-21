@@ -139,7 +139,7 @@ gmm_em_train <- function(training_data, num_components, max_num_steps = 200, sto
 
 #' Gaussian mixture model (GMM) with Expectation Maximization (EM) algorithm.
 #'
-#' Trains GMM model using EM algorithm.
+#' Estimates the densities of the given data using the trained GMM model from [gmm_em_train()].
 #'
 #' @param x matrix (num_sample_points x dim) of data points where the probability density function should be evaluated
 #' @param GMM model returned from gmm_em_train
