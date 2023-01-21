@@ -41,6 +41,7 @@ gmm_em_train <- function(training_data, num_components, max_num_steps = 200, sto
   # initilization step
   c_alphas <- rep(1 / num_components, times = num_components)
   c_means <- training_data[sample(seq_len(num_training_points), size = num_components, replace = FALSE),]
+  # TODO: maybe array is a better fit for c_cov_matrices as it can be used for creating truly multidimensional matrices
   c_cov_matrices <- matrix(list(cov(training_data)), nrow = num_components, ncol = 1)
   c_cov_matrices <- saturate_cov_matrices(c_cov_matrices, .debug = .debug)
 
