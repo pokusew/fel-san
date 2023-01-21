@@ -7,55 +7,105 @@ library(tidyverse)
 # see https://www.rdocumentation.org/packages/AUC/versions/0.3.2
 library(AUC)
 
+source("dataset.R")
 source("parzen.R")
 source("mog.R")
 
-datasets <- list.dirs(path = "data", full.names = FALSE, recursive = FALSE)
+datasets_names <- list.dirs(path = "data", full.names = FALSE, recursive = FALSE)
 
-dataset <- "magic-telescope"
+# for easy development:
+# dataset_name <- "breast-cancer-wisconsin"  # determinant of the training data covariance matrix is 0
+# dataset_name <- "cardiotocography"  # determinant of the training data covariance matrix is 0
+dataset_name <- "magic-telescope"
+# dataset_name <- "pendigits"
+# dataset_name <- "pima-indians"
+# dataset_name <- "wall-following-robot" # nice GMM-EM hyperparamter search chart
+# dataset_name <- "waveform-1"
+# dataset_name <- "waveform-2"
+# dataset_name <- "yeast"
 
-print(str_glue("using {dataset}"))
+print(str_glue("using {dataset_name}"))
 
-# load the data of the given dataset
-data_anomalous <- read.table(str_glue("data/{dataset}/anomalous.txt"), header = FALSE)
-rownames(data_anomalous) <- paste0("A", rownames(data_anomalous))
-data_normal <- read.table(str_glue("data/{dataset}/normal.txt"), header = FALSE)
-rownames(data_normal) <- paste0("N", rownames(data_normal))
+dataset <- load_dataset(dataset_name)
 
-# data_all <- rbind(data_anomalous %>% mutate(anomaly = TRUE), data_normal %>% mutate(anomaly = FALSE))
+# data_all <- rbind(dataset$anomalous %>% mutate(anomaly = TRUE), dataset$normal %>% mutate(anomaly = FALSE))
 # # vizualize the first two dimensions to get at least some idea what we are dealing with
 # data_all %>%
 #   ggplot(aes(x = V1, y = V2, color = anomaly)) +
 #   geom_point()
 
-# randomly split the data into training, validation and testing sets
-# the training and the validation set will contain only normal data
-# the testing set has to contain anomalous data (in addition to normal data)
-#   data_normal:
-#     - 50 % to the training set
-#     - 25 % to the validation set
-#     - 25 % to the testing set
-#   data_anomalous:
-#     - 100 % to the testing set
+# to get consistent results
+set.seed(1)
+dataset_split <- random_split_dataset(dataset)
 
-# randomly shuffle the normal data
-data_normal_shuffled <- data_normal[sample(nrow(data_normal)),]
-# randomly split the normal data into 4 groups (each contains roughly 25 %)
-data_normal_splits <- cut(seq_len(nrow(data_normal)), breaks = 4, labels = FALSE)
+# GMM beest hyperparameter search
 
-# training set for fitting the models (50 % of normal samples)
-data_normal_training_idxs <- which(data_normal_splits <= 2, arr.ind = TRUE)
-data_training <- data_normal_shuffled[data_normal_training_idxs,]
+log_likelihoods <- NULL
 
-# validation set for selecting hyper-parameters (25 % of normal samples)
-data_normal_validation_idxs <- which(data_normal_splits == 3, arr.ind = TRUE)
-data_validation <- data_normal_shuffled[data_normal_validation_idxs,]
+find_best_gmm_model <- function(min_num_components = 2, max_num_components = 10) {
 
-# testing set for evaluation (25 % of normal samples + 100 % of anomalous samples)
-data_normal_testing_idxs <- which(data_normal_splits == 4, arr.ind = TRUE)
-data_testing_normal <- data_normal_shuffled[data_normal_testing_idxs,]
-# note: we don't need to shuffle the anomalous data or mix up them with the selected part of the normal data
-data_testing <- rbind(data_testing_normal, data_anomalous)
+  print(str_glue("[find_best_gmm_model] num_components range {min_num_components}:{max_num_components}, starting ..."))
+
+  # `<<-` is global assignment
+  log_likelihoods <<- data.frame(
+    num_components = min_num_components:max_num_components,
+    log_likelihood = 0,
+    num_steps = 0L,
+    covergence = FALSE
+  )
+
+  best_model <- NULL
+  max_log_likelihood <- -Inf
+
+  for (i in seq_len(nrow(log_likelihoods))) {
+
+    num_components <- log_likelihoods$num_components[i]
+
+    print(str_glue("[find_best_gmm_model] num_components={num_components}"))
+
+    # to have the same starting conditions
+    set.seed(1)
+
+    model_i <- gmm_em_train(
+      training_data = dataset_split$training,
+      num_components = num_components,
+      max_num_steps = 250L,
+      stop_diff = 1e-4,
+      .debug = TRUE
+    )
+
+    if (!model_i$em_covergence) {
+      print(str_glue("[find_best_gmm_model] num_components={num_components} no convergence"))
+    }
+
+    estimates_i <- gmm_estimate(x = dataset_split$validation, model = model_i)
+
+    # assert that the estimated densities make sense
+    stopifnot(all(0 < estimates_i), all(estimates_i < 1))
+
+    log_likelihood_i <- sum(log(estimates_i))
+    print(str_glue("[find_best_gmm_model] num_components={num_components} -> log_likelihood={log_likelihood_i}"))
+
+    log_likelihoods$log_likelihood[i] <<- log_likelihood_i
+    log_likelihoods$covergence[i] <<- model_i$em_covergence
+    log_likelihoods$num_steps[i] <<- model_i$em_num_steps
+
+    if (log_likelihood_i > max_log_likelihood) {
+      max_log_likelihood <- log_likelihood_i
+      best_model <- model_i
+    }
+
+  }
+
+  return(best_model)
+
+}
+
+model_gmm <- find_best_gmm_model(min_num_components = 10, max_num_components = 20)
+
+log_likelihoods %>%
+    ggplot(aes(x = num_components, y = log_likelihood)) +
+    geom_line()
 
 # print("parzen running ...")
 # parzen_h <- data.frame(
