@@ -9,9 +9,17 @@
 #' @seealso https://en.wikipedia.org/wiki/Mixture_model#Multivariate_Gaussian_mixture_model
 #' @seealso https://brilliant.org/wiki/gaussian-mixture-model/
 #'
-#' @return model, a list with num_components, alphas, means, cov_matrices
+#' @return model, a list with dim, num_components, alphas, means, cov_matrices
 #'
 gmm_em_train <- function(training_data, num_components, num_steps = 60) {
+
+  if (
+    !is.numeric(num_components) ||
+      length(num_components) != 1 ||
+      num_components < 1
+  ) {
+    stop("invalid value for num_components argument given")
+  }
 
   num_training_points <- nrow(training_data)
   d <- ncol(training_data)
@@ -67,10 +75,15 @@ gmm_em_train <- function(training_data, num_components, num_steps = 60) {
 
   model <- list()
 
+  model$dim <- d
   model$num_components <- num_components
   model$alphas <- c_alphas
   model$means <- c_means
   model$cov_matrices <- c_cov_matrices
+  # the returned parameters satisfy the following conditions:
+  # 1. model$num_components == length(model$alphas) == nrow(model$means) == nrow(model$cov_matrices)
+  # 2. model$dim == ncol(model$means) == nrow(model$cov_matrices[[k]]) == ncol(model$cov_matrices[[k]])
+  #    where k is in range 1:model$num_components
 
   return(model)
 
@@ -88,8 +101,11 @@ gmm_em_train <- function(training_data, num_components, num_steps = 60) {
 gmm_estimate <- function(x, model) {
 
   num_samples <- nrow(x)
+  d <- ncol(x)
 
-  # TODO: assert that the x dimensions match the given model
+  if (model$dim != d) {
+    stop("the dimension of the given data (number of columns in x) does not match the dimension of the given model")
+  }
 
   estimates <- rep(0, times = num_samples)
 
