@@ -25,7 +25,7 @@
 #'                            em_num_steps <= max_num_steps (of not `NULL`
 #'           * em_covergence - TRUE when convergence was reached, FALSE otherwise
 #'
-gmm_em_train <- function(training_data, num_components, max_num_steps = 200, stop_diff = 1e-5, .debug = FALSE) {
+gmm_em_train <- function(training_data, num_components, max_num_steps = 200L, stop_diff = 1e-5, .debug = FALSE) {
 
   if (
     !is.numeric(num_components) ||
@@ -49,13 +49,13 @@ gmm_em_train <- function(training_data, num_components, max_num_steps = 200, sto
   likelihood_matrix <- matrix(0, nrow = num_training_points, ncol = num_components)
 
   convergence <- FALSE
-  step <- 1
+  step <- 1L
 
   while (TRUE) {
 
     if (is.numeric(max_num_steps) && step > max_num_steps) {
       cat(paste0("[gmm_em_train] EM max_num_steps=", max_num_steps, " reached while convergence NOT reached\n"))
-      step <- step - 1  # decrement so the the value in the returned model list is correct
+      step <- step - 1L  # decrement so the the value in the returned model list is correct
       break
     }
 
@@ -116,7 +116,7 @@ gmm_em_train <- function(training_data, num_components, max_num_steps = 200, sto
     c_alphas <- next_c_alphas
     c_means <- next_c_means
     c_cov_matrices <- next_c_cov_matrices
-    step <- step + 1
+    step <- step + 1L
 
   }
 
