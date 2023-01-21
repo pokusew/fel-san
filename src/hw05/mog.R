@@ -200,7 +200,7 @@ saturate_cov_matrices <- function(matrices, .debug = FALSE) {
     if (m_det < 10e-10) {
       matrices[[k]] <- m + diag(10e-5, nrow = nrow(m), ncol = ncol(m))
       if (.debug) {
-        cut(paste0("[saturate_cov_matrices] matrix ", k, " has to be saturated\n"))
+        cat(paste0("[saturate_cov_matrices] matrix ", k, " has to be saturated\n"))
       }
     }
   }
