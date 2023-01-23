@@ -22,7 +22,7 @@
 #'           * cov_matrices - trained convariance matrices of the Gaussian components,
 #'                            matrix (num_components x 1) of convariance matrices (dim x dim)
 #'           * em_num_steps - the number of performed EM algorithm iterations (steps),
-#'                            em_num_steps <= max_num_steps (of not `NULL`
+#'                            It holds: em_num_steps <= max_num_steps (when max_num_steps is not `NULL`)
 #'           * em_covergence - TRUE when convergence was reached, FALSE otherwise
 #'
 gmm_em_train <- function(training_data, num_components, max_num_steps = 200L, stop_diff = 1e-5, .debug = FALSE) {
