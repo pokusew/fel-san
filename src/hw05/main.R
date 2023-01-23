@@ -38,6 +38,76 @@ dataset <- load_dataset(dataset_name)
 set.seed(1)
 dataset_split <- random_split_dataset(dataset)
 
+print("parzen running ...")
+
+parzen_hyperparam_search <- optimize(
+  f = function(h) {
+    print(str_glue("h={h} ..."))
+    estimates_h <- parzen_multi_efficient(
+      x = dataset_split$validation,
+      training_data = dataset_split$training,
+      kernel_bandwidth = h
+    )
+    # assert that the estimated densities make sense
+    stopifnot(all(0 <= estimates_h), all(estimates_h <= 1))
+    log_likelihood_h <- sum(log(estimates_h))
+    return(log_likelihood_h)
+  },
+  interval = c(0.01, 200),
+  maximum = TRUE
+)
+parzen_best_h <- parzen_hyperparam_search$maximum
+parzen_best_testing_predictions <- parzen_multi_efficient(
+  x = dataset_split$testing,
+  training_data = dataset_split$training,
+  kernel_bandwidth = parzen_best_h
+)
+# we use `predictions = 1 - parzen_best` because we want:
+#   the lower the probability is, the more likely it is an anomaly (class 1)
+#   normally roc uses:
+#     the lower the probability is, the more likely it is class 0 (in our case, a normal datapoint)
+#     the higher the probability is, the more likely it is class 1 (in our case, an anomalous datapoint)
+parzen_best_roc <- roc(
+  predictions = 1 - parzen_best_testing_predictions,
+  labels = factor(dataset_split$testing_labels)
+)
+plot(parzen_best_roc)
+parzen_best_auc <- auc(parzen_best_roc, min = 0, max = 1)
+
+# vizualize parzen hyperparam search
+#
+# parzen_h <- data.frame(
+#   h = seq(from = 0.01, to = 200, length.out = 20),
+#   likelihood = 0
+# )
+#
+# for (i in seq_len(nrow(parzen_h))) {
+#
+#   h <- parzen_h$h[i]
+#
+#   print(str_glue("h={h} ..."))
+#
+#   estimates_i <- parzen_multi_efficient(
+#     x = dataset_split$validation,
+#     training_data = dataset_split$training,
+#     kernel_bandwidth = h
+#   )
+#
+#   # assert that the estimated densities make sense
+#   stopifnot(all(0 <= estimates_i), all(estimates_i <= 1))
+#
+#   log_likelihood_i <- sum(log(estimates_i))
+#   print(str_glue("[find_best_gmm_model] h={h} -> log_likelihood={log_likelihood_i}"))
+#
+#   parzen_h$likelihood[i] <- log_likelihood_i
+#
+# }
+#
+# parzen_h %>%
+#   ggplot(aes(x = h, y = likelihood)) +
+#   geom_line()
+
+
 # GMM beest hyperparameter search
 
 log_likelihoods <- NULL
@@ -101,28 +171,16 @@ find_best_gmm_model <- function(min_num_components = 2, max_num_components = 10)
 
 }
 
-model_gmm <- find_best_gmm_model(min_num_components = 10, max_num_components = 20)
+# temporarily fix num_components to 10
+model_gmm <- find_best_gmm_model(min_num_components = 10, max_num_components = 10)
+gmm_best_testing_predictions <- gmm_estimate(x = dataset_split$testing, model = model_gmm)
+gmm_best_roc <- roc(
+  predictions = 1 - gmm_best_testing_predictions,
+  labels = factor(dataset_split$testing_labels)
+)
+plot(gmm_best_roc)
+gmm_best_auc <- auc(gmm_best_roc, min = 0, max = 1)
 
-log_likelihoods %>%
-    ggplot(aes(x = num_components, y = log_likelihood)) +
-    geom_line()
-
-# print("parzen running ...")
-# parzen_h <- data.frame(
-#   h = seq(from = 0.01, to = 10, length.out = 100),
-#   likelihood = rep(x = 0, times = 100)
-# )
-# for (i in seq_len(100)) {
-#   h <- parzen_h$h[i]
-#   print(str_glue("h={h} ..."))
-#   p <- parzen(x = as.matrix(data_testing), training_data = as.matrix(data_training), kernel_bandwidth = h)
-#   l <- sum(log(p))
-#   parzen_h$likelihood[i] <- l
-# }
-
-# parzen_h %>%
-#   ggplot(aes(x = h, y = likelihood)) +
+# log_likelihoods %>%
+#   ggplot(aes(x = num_components, y = log_likelihood)) +
 #   geom_line()
-
-# parzen_roc <- roc(predictions, labels)
-# parzen_auc <- auc(parzen_roc, min = 0, max = 1)
