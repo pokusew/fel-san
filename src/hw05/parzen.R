@@ -2,7 +2,7 @@
 #'
 #' @param x vector of N data points (scalars) where the probability density functions should be evaluated
 #' @param training_data vector of M points (scalars)
-#' @param kernel_bandwidth kernel bandwidth, a positive scalar, (also denoted h) (hyperparameter)
+#' @param kernel_bandwidth kernel bandwidth, a positive scalar double, also denoted h (hyperparameter)
 #'
 #' @seealso https://en.wikipedia.org/wiki/Kernel_density_estimation
 #' @seealso https://cw.fel.cvut.cz/wiki/courses/be5b33rpz/labs/05_parzen/start
@@ -10,6 +10,14 @@
 #' @return vector of estimated densities evaluated at values given by x
 #'
 parzen <- function(x, training_data, kernel_bandwidth) {
+
+  if (
+    !is.numeric(kernel_bandwidth) ||
+      length(kernel_bandwidth) != 1 ||
+      kernel_bandwidth <= 0
+  ) {
+    stop("invalid value for kernel_bandwidth argument given")
+  }
 
   n <- length(x)
 
