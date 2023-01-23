@@ -9,11 +9,27 @@ The assigment description can be found [here](./anomaly-project.pdf).
 temporarily.
 
 
-## Status 
+## Status
 
 **Task 1** ([parzen.R](./parzen.R), [mog.R](./mog.R)) should be fully completed. ✅
 
-**Tasks 2, 3, and 4** are nearly finished in main.R. I will finish the implementation later today. 🏗
+Changes since Brute submission:
+
+* [parzen.R](./parzen.R):
+	* Implemented support for multi-dimensional data (`parzen_multi` and `parzen_multi_efficient`).
+	* The original `parzen` function supports only one-dimensional data (scalars).
+* [mog.R](./mog.R):
+	* [Fixed](https://github.com/pokusew/fel-san/commit/56e6141a9a7e5fa78b5a4aafe307766d8d661f2c) micro-bug
+	  in `gmm_estimate` (the training was not affected).
+	* [Implemented](https://github.com/pokusew/fel-san/commit/063a17fc4e5df9d83805631422187ace952fe54d)
+	  EM convergence check in [`gmm_em_train`](./mog.R#L28). Instead of a configurable but fixed
+	  EM `num_steps`, there is now `stop_diff` that determines the max difference in parameters between successive
+	  iterations to be considered as EM convergence. Apart from that, there is also `max_num_steps` that limits the
+	  number of EM iterations (non-zero integer or `NULL` for unlimited number of iterations).
+	* Improved comments and code clarity. 🧹
+	* Otherwise, **the implementation remained the same, and no functional changes were made**.
+
+**Tasks 2, 3, and 4** are nearly finished in [main.R](./main.R). I will finish the implementation very soon. 🏗
 
 Tasks 5 and 6 are not and will not be implemented.
 
