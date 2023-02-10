@@ -1,0 +1,10 @@
+Assignment: final_cybe - Final assignment
+Deadline: 12.1.2023 23:59 - deadline expired
+Latest upload: Uploaded at 19.1.2023 23:57
+Late submission: less than 1 week > penalty 50 %
+
+Score: 8 ( min: 0 max: 15 )
+Evaluation:
+
+I have looked at the solution on github.
+Seems fine to me, but the work is not finished.
