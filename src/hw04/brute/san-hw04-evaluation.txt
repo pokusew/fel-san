@@ -2,7 +2,7 @@ Assignment: a4-dim-R - Assignment 4 - Dimred
 Deadline: 29.11.2022 00:00 - deadline expired
 Latest upload: Uploaded at 28.11.2022 23:58
 
-Score: ...
+Score: 6 ( min: 0 max: 5 )
 Evaluation:
 
-...
+Implementace správně. Super komentáře k výsledkům projekcí. Cením pokusy s různými parametry k.
